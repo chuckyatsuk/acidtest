@@ -8,11 +8,8 @@ import { join, basename, extname, dirname } from "path";
 import { glob } from "glob";
 import matter from "gray-matter";
 import type { Skill, CodeFile, ScanResult, Finding } from "./types.js";
-import { scanPermissions } from "./layers/permissions.js";
 import { scanInjection } from "./layers/injection.js";
 import { scanCode } from "./layers/code.js";
-import { scanCrossReference } from "./layers/crossref.js";
-import { scanDataflow } from "./layers/dataflow.js";
 import {
   calculateScore,
   determineStatus,
@@ -43,36 +40,20 @@ export async function scanSkill(skillPath: string, showProgress: boolean = false
   const userConfig = loadConfig(skillPath);
   const config = mergeConfig(userConfig);
 
-  // Run all five scanning layers
-  if (spinner) spinner.text = 'Layer 1: Checking permissions...';
-  const layer1 = await scanPermissions(skill);
+  // v2 runs two layers: injection (tool descriptions / manifests / markdown)
+  // and code (regex + TS/JS AST). Permissions, cross-reference, and dataflow
+  // were removed in the MCP-first teardown — they were built for the
+  // AgentSkills permission model and mostly self-disabled for MCP servers.
+  if (spinner) spinner.text = 'Scanning tool descriptions and manifest...';
+  const injectionResult = await scanInjection(skill);
 
-  if (spinner) spinner.text = 'Layer 2: Detecting injection patterns...';
-  const layer2 = await scanInjection(skill);
-
-  if (spinner) spinner.text = 'Layer 3: Analyzing code...';
-  const layer3 = await scanCode(skill);
-
-  // Combine findings from layers 1-3 for cross-reference
-  const previousFindings = [
-    ...layer1.findings,
-    ...layer2.findings,
-    ...layer3.findings,
-  ];
-
-  if (spinner) spinner.text = 'Layer 4: Cross-referencing behaviors...';
-  const layer4 = await scanCrossReference(skill, previousFindings);
-
-  if (spinner) spinner.text = 'Layer 5: Analyzing dataflow...';
-  const layer5 = await scanDataflow(skill);
+  if (spinner) spinner.text = 'Analyzing code...';
+  const codeResult = await scanCode(skill);
 
   // Combine all findings
   let allFindings: Finding[] = [
-    ...layer1.findings,
-    ...layer2.findings,
-    ...layer3.findings,
-    ...layer4.findings,
-    ...layer5.findings,
+    ...injectionResult.findings,
+    ...codeResult.findings,
   ];
 
   // Apply ignore filters from config
@@ -95,7 +76,7 @@ export async function scanSkill(skillPath: string, showProgress: boolean = false
 
   // Calculate score and status
   const score = calculateScore(allFindings);
-  const status = determineStatus(score);
+  const status = determineStatus(score, allFindings);
   const recommendation = generateRecommendation(status, allFindings);
 
   // Build result with normalized permissions

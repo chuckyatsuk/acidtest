@@ -22,20 +22,25 @@ describe("scanSkill", () => {
     expect(result.tool).toBe("acidtest");
   });
 
-  it("should scan WARN fixture and return WARN status", async () => {
+  it("scores a benign fetch skill as PASS", async () => {
+    // fixture-warn is a benign web-fetcher (env + fetch, declared browser
+    // tool). In the v2 two-layer model there is no cross-reference layer to
+    // flag "undeclared access," so a benign skill scores clean — correct for
+    // the MCP-first threat model.
     const result = await scanSkill(join(fixturesDir, "fixture-warn"));
 
-    expect(result.status).toBe("WARN");
-    expect(result.score).toBeGreaterThanOrEqual(50);
-    expect(result.score).toBeLessThan(80);
+    expect(result.status).toBe("PASS");
+    expect(result.findings.every((f) => f.severity !== "CRITICAL")).toBe(true);
   });
 
-  it("should scan FAIL fixture and return FAIL status", async () => {
+  it("scores a skill with HIGH findings but no CRITICAL as WARN", async () => {
+    // fixture-fail carries a maintenance-mode injection and fs-unlink, both
+    // HIGH. With no CRITICAL, the any-CRITICAL-floors-to-FAIL rule does not
+    // apply, so this lands at WARN.
     const result = await scanSkill(join(fixturesDir, "fixture-fail"));
 
-    expect(result.status).toBe("FAIL");
-    expect(result.score).toBeGreaterThanOrEqual(20);
-    expect(result.score).toBeLessThan(50);
+    expect(result.status).toBe("WARN");
+    expect(result.findings.some((f) => f.severity === "HIGH")).toBe(true);
   });
 
   it("should scan DANGER fixture and return DANGER status", async () => {
@@ -131,9 +136,10 @@ describe("scanSkill", () => {
     // Should still detect code patterns
     expect(result.findings.length).toBeGreaterThan(0);
 
-    // Should have shell execution finding (from code layer)
+    // Should detect the subprocess(shell=True) command injection via the
+    // python-sinks regex pack (Python AST was removed in v2).
     const shellFindings = result.findings.filter(f =>
-      f.category.includes('child_process') || f.title.includes('shell')
+      f.patternId === 'py-001' || f.title.includes('shell')
     );
     expect(shellFindings.length).toBeGreaterThan(0);
   });

@@ -61,25 +61,16 @@ async function main() {
 async function handleScan(args: string[]) {
   // Parse flags
   const jsonOutput = args.includes("--json");
-  const watchMode = args.includes("--watch") || args.includes("-w");
-  const noClear = args.includes("--no-clear");
   const showFix = args.includes("--fix");
-  const paths = args.filter((arg) => !arg.startsWith("--") && arg !== "-w");
+  const paths = args.filter((arg) => !arg.startsWith("--"));
 
   if (paths.length === 0) {
-    console.error("Error: No skill path provided");
-    console.error("Usage: acidtest scan <path-to-skill> [--json] [--watch]");
+    console.error("Error: No path provided");
+    console.error("Usage: acidtest scan <path> [--json] [--fix]");
     process.exit(1);
   }
 
   const skillPath = paths[0];
-
-  // Handle watch mode
-  if (watchMode) {
-    const { watchMode: startWatchMode } = await import('./watch.js');
-    await startWatchMode(skillPath, { noClear, jsonOutput, showRemediation: showFix });
-    return; // Watch mode handles its own exit
-  }
 
   try {
     // Load config from skill directory
@@ -440,7 +431,7 @@ Security scanner for AI agent skills and MCP servers
 
 USAGE:
   acidtest lint <path> [--json] [--quiet]
-  acidtest scan <path> [--json] [--watch] [--fix] [--no-clear]
+  acidtest scan <path> [--json] [--fix]
   acidtest scan-all <directory> [--json]
   acidtest diff <old-version> <new-version> [--json]
   acidtest demo
@@ -458,9 +449,7 @@ COMMANDS:
 
 OPTIONS:
   --json        Output results as JSON
-  --watch, -w   Watch for file changes and re-scan automatically
   --fix         Show actionable remediation suggestions for findings
-  --no-clear    Don't clear terminal between scans (watch mode only)
   --version     Print version number
   --help        Show this help message
 
@@ -479,9 +468,6 @@ EXAMPLES:
 
   # Show remediation suggestions for findings
   acidtest scan ./my-skill --fix
-
-  # Watch for changes and re-scan automatically
-  acidtest scan ./my-skill --watch
 
   # Scan all skills/servers in a directory
   acidtest scan-all ./directory

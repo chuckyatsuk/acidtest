@@ -6,8 +6,6 @@
 import ts from 'typescript';
 import type { Skill, Finding, LayerResult, CodeFile } from '../types.js';
 import { loadPatterns } from '../pattern-loader.js';
-import { TypeScriptParser } from '../parsers/typescript-parser.js';
-import { PythonParser } from '../parsers/python-parser.js';
 
 /**
  * Scan code files for security issues
@@ -30,27 +28,27 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
   const obfuscationPatterns = await loadPatterns('obfuscation');
   const credentialPatterns = await loadPatterns('credential-patterns');
 
-  // Load Python-specific patterns
-  const dangerousImportsPython = await loadPatterns('dangerous-imports-python');
-  const dangerousCallsPython = await loadPatterns('dangerous-calls-python');
-
   // Unicode/invisible-character obfuscation patterns
   const unicodePatterns = await loadPatterns('unicode-obfuscation');
 
   // Credential-exfiltration-via-MCP-channel patterns
   const mcpExfilPatterns = await loadPatterns('mcp-exfil');
 
-  // Combine all code-layer patterns
+  // Python dangerous-sink patterns (regex; replaces the removed Python AST)
+  const pythonSinkPatterns = await loadPatterns('python-sinks');
+
+  // Combine all code-layer patterns. Python-specific AST scanning was
+  // removed in v2 (MCP-first); Python sinks are now covered by the
+  // regex python-sinks pack, and the rest are language-agnostic.
   const allPatterns = [
     ...dangerousImports,
     ...pathPatterns,
     ...exfiltrationPatterns,
     ...obfuscationPatterns,
     ...credentialPatterns,
-    ...dangerousImportsPython,
-    ...dangerousCallsPython,
     ...unicodePatterns,
-    ...mcpExfilPatterns
+    ...mcpExfilPatterns,
+    ...pythonSinkPatterns
   ].filter(p => p.layer === 'code');
 
   // Scan each code file
@@ -121,30 +119,9 @@ function scanCodeWithAST(codeFile: CodeFile): Finding[] {
   const relativePath = codeFile.path;
 
   try {
-    // Dispatch to appropriate parser based on file extension
+    // Python files: no AST analysis in v2 (tree-sitter removed for MCP-first).
+    // They are still covered by the language-agnostic regex patterns.
     if (codeFile.extension === 'py') {
-      // Python files - use tree-sitter for AST analysis
-      const pythonParser = new PythonParser();
-      if (pythonParser.canParse(codeFile.path)) {
-        try {
-          const parsed = pythonParser.parse(codeFile.path, codeFile.content);
-
-          // Analyze Python AST for suspicious patterns
-          const pythonFindings = analyzePythonAST(parsed.ast, codeFile.content, relativePath);
-          findings.push(...pythonFindings);
-
-        } catch (error) {
-          // Python parse error
-          findings.push({
-            severity: 'MEDIUM',
-            category: 'parse-error',
-            title: 'Failed to parse Python file',
-            file: relativePath,
-            detail: 'Could not parse file as valid Python',
-            evidence: 'May indicate malformed or obfuscated code'
-          });
-        }
-      }
       return findings;
     }
 
@@ -527,232 +504,4 @@ function findLineNumber(text: string, match: string): number | undefined {
   const lineNumber = beforeMatch.split('\n').length;
 
   return lineNumber;
-}
-
-/**
- * Analyze Python AST for security issues
- */
-function analyzePythonAST(tree: any, content: string, filePath: string): Finding[] {
-  const findings: Finding[] = [];
-  const rootNode = tree.rootNode;
-
-  // Traverse the AST and collect dangerous patterns
-  const dangerousCalls: Array<{ name: string; line: number; text: string }> = [];
-  const dangerousImports: Array<{ module: string; line: number; text: string }> = [];
-
-  function traverse(node: any) {
-    if (!node) return;
-
-    // Detect dangerous function calls
-    if (node.type === 'call') {
-      const funcNode = node.childForFieldName('function');
-      if (funcNode) {
-        const funcText = funcNode.text;
-        const line = node.startPosition.row + 1;
-        const callText = node.text;
-
-        // Check for dangerous builtins: eval(), exec(), compile()
-        if (['eval', 'exec', 'compile', '__import__'].includes(funcText)) {
-          dangerousCalls.push({ name: funcText, line, text: callText });
-        }
-
-        // Check for os.system(), os.popen(), etc.
-        if (funcText.startsWith('os.')) {
-          const methodName = funcText.substring(3);
-          if (['system', 'popen', 'popen2', 'popen3', 'popen4'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-          if (['execl', 'execle', 'execlp', 'execlpe', 'execv', 'execve', 'execvp', 'execvpe'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-          if (['spawnl', 'spawnle', 'spawnlp', 'spawnlpe', 'spawnv', 'spawnve', 'spawnvp', 'spawnvpe'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-          if (['remove', 'unlink', 'rmdir', 'removedirs'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-        }
-
-        // Check for subprocess calls (especially with shell=True)
-        if (funcText.startsWith('subprocess.')) {
-          const methodName = funcText.substring(11);
-          if (['run', 'call', 'Popen', 'check_output', 'check_call'].includes(methodName)) {
-            // Check if shell=True is present in the arguments
-            if (callText.includes('shell=True') || callText.includes('shell = True')) {
-              dangerousCalls.push({ name: `${funcText} with shell=True`, line, text: callText });
-            } else {
-              dangerousCalls.push({ name: funcText, line, text: callText });
-            }
-          }
-        }
-
-        // Check for pickle.loads(), pickle.load()
-        if (funcText.startsWith('pickle.')) {
-          const methodName = funcText.substring(7);
-          if (['loads', 'load', 'Unpickler'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-        }
-
-        // Check for marshal.loads(), marshal.load()
-        if (funcText.startsWith('marshal.')) {
-          const methodName = funcText.substring(8);
-          if (['loads', 'load'].includes(methodName)) {
-            dangerousCalls.push({ name: funcText, line, text: callText });
-          }
-        }
-
-        // Check for yaml.load() (should use safe_load)
-        if (funcText === 'yaml.load' && !callText.includes('SafeLoader')) {
-          dangerousCalls.push({ name: 'yaml.load without SafeLoader', line, text: callText });
-        }
-
-        // Check for shutil.rmtree()
-        if (funcText === 'shutil.rmtree') {
-          dangerousCalls.push({ name: funcText, line, text: callText });
-        }
-
-        // Check for tempfile.mktemp()
-        if (funcText === 'tempfile.mktemp') {
-          dangerousCalls.push({ name: funcText, line, text: callText });
-        }
-
-        // Check for open() with write mode
-        if (funcText === 'open' && /['"]w/.test(callText)) {
-          dangerousCalls.push({ name: 'open() with write mode', line, text: callText });
-        }
-
-        // Check for importlib.import_module()
-        if (funcText === 'importlib.import_module') {
-          dangerousCalls.push({ name: funcText, line, text: callText });
-        }
-      }
-    }
-
-    // Detect dangerous imports
-    if (node.type === 'import_statement' || node.type === 'import_from_statement') {
-      const line = node.startPosition.row + 1;
-      const importText = node.text;
-
-      // Check for dangerous modules
-      const dangerousModules = [
-        'subprocess', 'os', 'pickle', 'shelve', 'marshal', 'ctypes', 'cffi',
-        'socket', 'requests', 'urllib', 'httpx', 'importlib'
-      ];
-
-      for (const module of dangerousModules) {
-        if (importText.includes(module)) {
-          dangerousImports.push({ module, line, text: importText });
-          break;
-        }
-      }
-    }
-
-    // Recursively traverse children
-    for (let i = 0; i < node.childCount; i++) {
-      traverse(node.child(i));
-    }
-  }
-
-  traverse(rootNode);
-
-  // Create findings for dangerous calls
-  const callCounts = new Map<string, number>();
-  for (const call of dangerousCalls) {
-    const count = callCounts.get(call.name) || 0;
-    callCounts.set(call.name, count + 1);
-  }
-
-  for (const [callName, count] of callCounts.entries()) {
-    const firstCall = dangerousCalls.find(c => c.name === callName);
-    if (!firstCall) continue;
-
-    let severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'HIGH';
-    let patternId = 'pycall-999';
-
-    // Determine severity and pattern ID based on call type
-    if (callName === 'eval' || callName === 'exec') {
-      severity = 'CRITICAL';
-      patternId = callName === 'eval' ? 'pyimp-003' : 'pyimp-004';
-    } else if (callName.includes('shell=True')) {
-      severity = 'CRITICAL';
-      patternId = 'pycall-001';
-    } else if (callName === 'os.system') {
-      severity = 'CRITICAL';
-      patternId = 'pycall-002';
-    } else if (callName.startsWith('pickle.')) {
-      severity = 'CRITICAL';
-      patternId = 'pycall-006';
-    } else if (callName.startsWith('yaml.load')) {
-      severity = 'CRITICAL';
-      patternId = 'pycall-008';
-    } else if (callName === 'shutil.rmtree') {
-      severity = 'HIGH';
-      patternId = 'pycall-012';
-    }
-
-    findings.push({
-      severity,
-      category: 'dangerous-calls',
-      title: `Dangerous Python call: ${callName}()`,
-      file: filePath,
-      line: firstCall.line,
-      detail: `Uses ${callName}() which can be dangerous`,
-      evidence: `Found ${count} occurrence(s)`,
-      patternId
-    });
-  }
-
-  // Create findings for dangerous imports (but only INFO level to avoid false positives)
-  const importCounts = new Map<string, number>();
-  for (const imp of dangerousImports) {
-    const count = importCounts.get(imp.module) || 0;
-    importCounts.set(imp.module, count + 1);
-  }
-
-  for (const [module, count] of importCounts.entries()) {
-    const firstImport = dangerousImports.find(i => i.module === module);
-    if (!firstImport) continue;
-
-    let severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
-    let patternId = 'pyimp-999';
-
-    // Determine severity based on module
-    if (module === 'pickle') {
-      severity = 'CRITICAL';
-      patternId = 'pyimp-006';
-    } else if (module === 'subprocess') {
-      severity = 'HIGH';
-      patternId = 'pyimp-001';
-    } else if (module === 'os') {
-      severity = 'MEDIUM';
-      patternId = 'pyimp-002';
-    } else if (['ctypes', 'cffi', 'marshal', 'shelve'].includes(module)) {
-      severity = 'HIGH';
-      patternId = module === 'ctypes' ? 'pyimp-011' :
-                  module === 'cffi' ? 'pyimp-012' :
-                  module === 'marshal' ? 'pyimp-008' : 'pyimp-007';
-    } else if (['socket', 'requests', 'urllib', 'httpx'].includes(module)) {
-      severity = 'LOW';
-      patternId = module === 'socket' ? 'pyimp-013' :
-                  module === 'requests' ? 'pyimp-014' :
-                  module === 'urllib' ? 'pyimp-015' : 'pyimp-016';
-    } else if (module === 'importlib') {
-      severity = 'MEDIUM';
-      patternId = 'pyimp-010';
-    }
-
-    findings.push({
-      severity,
-      category: 'dangerous-imports',
-      title: `Python import: ${module}`,
-      file: filePath,
-      line: firstImport.line,
-      detail: `Imports ${module} module`,
-      evidence: `Found ${count} import(s)`,
-      patternId
-    });
-  }
-
-  return findings;
 }
