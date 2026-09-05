@@ -22,45 +22,61 @@ npm pack --dry-run          # 123 files, dist only — no .github/fixtures/corpu
 
 ## 1. Git tag
 
-The repo tags releases as `vX.Y.Z`:
+Done: `v1.1.0` is already tagged and pushed (on merge commit `762cbd7`).
+Because the release workflow was added *after* that tag, publishing
+requires re-pushing the tag — see step 2's "Trigger the release".
+
+## 2. npm publish (with provenance, via CI Trusted Publishing)
+
+We publish from GitHub Actions using **npm Trusted Publishing (OIDC)** —
+no token is stored anywhere, and provenance is generated automatically.
+The workflow is `.github/workflows/release.yml` (already on `main`); it
+runs on any `v*` tag push.
+
+Local `npm publish --provenance` does NOT work from a laptop —
+provenance needs a CI/OIDC provider, which is why we use the workflow.
+
+### One-time: configure the trusted publisher (owner, on npmjs.com)
+
+1. Log in to npmjs.com as the `acidtest` package owner.
+2. Go to the **acidtest** package → **Settings** → **Publishing access**
+   (a.k.a. Trusted Publishers).
+3. Add a **GitHub Actions** trusted publisher:
+   - Organization / user: `currentlycurrently`
+   - Repository: `acidtest`
+   - Workflow filename: `release.yml` (exactly, case-sensitive)
+   - Environment: leave blank (the workflow uses none)
+4. Save.
+
+### Trigger the release
+
+The `v1.1.0` tag was pushed before the workflow existed, so re-point it to
+a commit that includes the workflow and re-push — that fires the release
+job:
 
 ```bash
+git fetch origin
+git checkout main && git pull            # main includes release.yml
+git tag -d v1.1.0                        # remove the old local tag
+git push origin :refs/tags/v1.1.0        # remove the old remote tag
 git tag -a v1.1.0 -m "AcidTest v1.1.0 — 2026 threat-model update"
-git push origin v1.1.0
+git push origin v1.1.0                   # this push triggers release.yml
 ```
 
-## 2. npm publish (with provenance)
-
-You are not currently logged in on this machine (`npm whoami` → 401), so:
+Watch it:
 
 ```bash
-npm login          # authenticate as the acidtest package owner
-npm whoami         # confirm it shows your npm user
+gh run watch --exit-status $(gh run list --workflow release.yml --limit 1 --json databaseId -q '.[0].databaseId')
 ```
-
-Then publish. `prepublishOnly` is not configured, so build explicitly first:
-
-```bash
-npm run build
-npm publish --provenance --access public
-```
-
-Notes on `--provenance`:
-- Provenance works out of the box when publishing from a CI runner with
-  OIDC (e.g. GitHub Actions). Publishing **locally** with `--provenance`
-  requires a recent npm and may prompt for 2FA/OTP — have your authenticator
-  ready. If a local `--provenance` publish is rejected for lack of a
-  supported CI environment, either publish from a GitHub Actions release
-  workflow, or drop `--provenance` for this release and add the CI publish
-  workflow next.
-- `--access public` is explicit-safe; the package is unscoped so it is
-  public regardless, but this makes intent clear.
 
 Verify:
 
 ```bash
 npm view acidtest version    # should print 1.1.0
 ```
+
+> For future releases (v1.1.1+) the flow is just: bump version, commit,
+> `git tag vX.Y.Z && git push origin vX.Y.Z`. No local publish, no token.
 
 ## 3. GitHub repo metadata (owner-executed)
 
