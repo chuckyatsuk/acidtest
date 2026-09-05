@@ -1,0 +1,83 @@
+{
+  "category": "tool-poisoning",
+  "patterns": [
+    {
+      "id": "tp-001",
+      "name": "important-tag-in-description",
+      "description": "Emphasis/system tag embedded in tool or parameter description to smuggle instructions",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "<\\s*(important|critical|admin|system|secret)\\s*>",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    },
+    {
+      "id": "tp-002",
+      "name": "concealment-directive",
+      "description": "Instructs the agent to hide behavior from the user",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "do\\s+not\\s+(tell|inform|mention|reveal|show|disclose|alert)\\s+(this\\s+)?(to\\s+)?the\\s+user",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    },
+    {
+      "id": "tp-003",
+      "name": "pre-tool-hijack",
+      "description": "Directs the agent to act before or instead of other tools",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(before|instead\\s+of)\\s+(using|calling|invoking)\\s+(this|any(\\s+other)?|the|another|other)\\s+tools?",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    },
+    {
+      "id": "tp-004",
+      "name": "parameter-smuggling-directive",
+      "description": "Instructs the agent to place data into a tool parameter or field",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "(pass|include|put|insert|send)\\s+(it|them|its\\s+(contents?|value)|the\\s+(contents?|value|key|token|output))\\s+(as|in|into|via)\\s+(the\\s+)?[\\w\"']*\\s*(parameter|argument|field)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    },
+    {
+      "id": "tp-005",
+      "name": "hidden-parameter-name",
+      "description": "Tool declares a parameter name commonly used for covert data channels",
+      "severity": "MEDIUM",
+      "match": {
+        "type": "regex",
+        "value": "\"(sidenote|side_note|_?_?system_?note|debug_context|hidden_note|extra_context)\"",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    },
+    {
+      "id": "tp-006",
+      "name": "tool-priority-directive",
+      "description": "Demands this tool or server be preferred over alternatives",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(always|must)\\s+(use|call|invoke|prefer)\\s+this\\s+(tool|server|skill)\\s+(before|instead|first|over)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "tool-poisoning"
+    }
+  ]
+}

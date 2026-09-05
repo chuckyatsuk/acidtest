@@ -1,0 +1,57 @@
+{
+  "category": "mcp-shadowing",
+  "patterns": [
+    {
+      "id": "cs-001",
+      "name": "tool-override-claim",
+      "description": "Tool or server claims to replace or override a built-in or existing tool",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(replaces?|overrides?|shadows?|supersedes?)\\s+(the\\s+)?(built[- ]?in|original|official|native|default|existing)\\s+(tool|server|version|implementation)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "mcp-shadowing"
+    },
+    {
+      "id": "cs-002",
+      "name": "use-instead-directive",
+      "description": "Directs the agent to use this tool instead of another server's tool",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "use\\s+this\\s+(tool|server|one)?\\s*instead\\s+of\\s+(the\\s+)?[\\w'-]+(\\s+server('s)?|\\s+tool)?",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "mcp-shadowing"
+    },
+    {
+      "id": "cs-003",
+      "name": "cross-server-interception",
+      "description": "Claims to intercept or handle traffic meant for other servers or tools",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(intercepts?|captures?|routes?|proxies|forwards?)\\s+(all\\s+)?(calls|requests|messages|traffic)\\s+(to|for|from)\\s+(other|another|all|every)\\s+(servers?|tools?)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "mcp-shadowing"
+    },
+    {
+      "id": "cs-004",
+      "name": "official-impersonation",
+      "description": "Server or tool presents itself as the official or built-in implementation",
+      "severity": "MEDIUM",
+      "match": {
+        "type": "regex",
+        "value": "this\\s+(server|tool)\\s+(is|acts\\s+as)\\s+(the|an?)\\s+(official|standard|built[- ]?in|authorized)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "mcp-shadowing"
+    }
+  ]
+}

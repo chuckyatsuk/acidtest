@@ -1,0 +1,83 @@
+{
+  "category": "unicode-obfuscation",
+  "patterns": [
+    {
+      "id": "uo-001",
+      "name": "zero-width-in-code",
+      "description": "Zero-width or invisible Unicode characters in source code",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "[\\u200B\\u200C\\u200D\\u200E\\u200F\\u2060\\uFEFF]",
+        "flags": "g"
+      },
+      "layer": "code",
+      "category": "unicode-obfuscation"
+    },
+    {
+      "id": "uo-002",
+      "name": "bidi-override-in-markdown",
+      "description": "Bidirectional text control characters that can visually reorder content",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "[\\u202A-\\u202E\\u2066-\\u2069]",
+        "flags": "g"
+      },
+      "layer": "markdown",
+      "category": "unicode-obfuscation"
+    },
+    {
+      "id": "uo-003",
+      "name": "bidi-override-in-code",
+      "description": "Bidirectional control characters in source code (Trojan Source attack)",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "[\\u202A-\\u202E\\u2066-\\u2069]",
+        "flags": "g"
+      },
+      "layer": "code",
+      "category": "unicode-obfuscation"
+    },
+    {
+      "id": "uo-004",
+      "name": "unicode-tag-characters",
+      "description": "Invisible Unicode tag characters (U+E0000 block) that can smuggle hidden instructions",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "[\\u{E0000}-\\u{E007F}]",
+        "flags": "gu"
+      },
+      "layer": "markdown",
+      "category": "unicode-obfuscation"
+    },
+    {
+      "id": "uo-005",
+      "name": "unicode-tag-characters-in-code",
+      "description": "Invisible Unicode tag characters (U+E0000 block) in source code",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "[\\u{E0000}-\\u{E007F}]",
+        "flags": "gu"
+      },
+      "layer": "code",
+      "category": "unicode-obfuscation"
+    },
+    {
+      "id": "uo-006",
+      "name": "mixed-script-homoglyph",
+      "description": "Cyrillic or Greek homoglyphs mixed into Latin words",
+      "severity": "MEDIUM",
+      "match": {
+        "type": "regex",
+        "value": "[A-Za-z][\\u0400-\\u04FF\\u0370-\\u03FF]|[\\u0400-\\u04FF\\u0370-\\u03FF][A-Za-z]",
+        "flags": "g"
+      },
+      "layer": "markdown",
+      "category": "unicode-obfuscation"
+    }
+  ]
+}

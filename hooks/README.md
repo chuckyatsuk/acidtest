@@ -1,6 +1,46 @@
-# AcidTest Git Hooks
+# AcidTest Hooks
 
-Pre-commit hooks to automatically scan your skills/MCP servers for security issues before committing.
+Hooks to automatically scan your skills/MCP servers for security issues —
+at commit time (git pre-commit) and at install time (Claude Code PreToolUse).
+
+## Claude Code PreToolUse Hook
+
+`claude-code-preinstall.sh` blocks a Claude Code tool call when AcidTest
+flags the project directory. Claude Code passes the tool call as JSON on
+stdin and treats **exit code 2** as "block this action."
+
+### Installation
+
+```bash
+mkdir -p ~/.claude/hooks
+curl -o ~/.claude/hooks/acidtest-preinstall.sh \
+  https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/claude-code-preinstall.sh
+chmod +x ~/.claude/hooks/acidtest-preinstall.sh
+```
+
+Then register it in `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [
+          { "type": "command",
+            "command": "~/.claude/hooks/acidtest-preinstall.sh" }
+        ] }
+    ]
+  }
+}
+```
+
+### Behavior
+
+- Reads the tool call from stdin; only acts on install-shaped `Bash`
+  commands (`install`, `plugin add`, `clone`) and ignores its own scans.
+- Scans `$CLAUDE_PROJECT_DIR` and **exits 2 to block** when the result is
+  `FAIL`/`DANGER`; otherwise exits 0 and the action proceeds.
+- Requires `acidtest` and `jq` on `PATH`.
 
 ## Pre-Commit Hook
 

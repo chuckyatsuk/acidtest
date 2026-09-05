@@ -14,29 +14,62 @@ AcidTest performs **static analysis** on AI agent skills and MCP servers using f
 
 ### Detection Capabilities
 
-**What We Catch Well (90-95% success rate with dataflow analysis):**
+AcidTest ships **134 detection patterns across 19 category files**, plus
+AST-based and heuristic checks that have no JSON representation (dataflow
+taint tracking, entropy analysis, version-diff rug-pull detection). To
+regenerate the pattern count: `npm run validate:patterns`.
+
+**What We Catch:**
 - Direct calls to dangerous APIs (`exec`, `eval`, `Function`)
-- Common prompt injection patterns
+- Prompt injection, including the 2026 vocabulary (fake system-reminder
+  and tool-result blocks, embedded tool-call JSON, direct address to the
+  reviewing AI, claimed vendor provenance)
+- MCP tool poisoning (instructions smuggled into tool/parameter descriptions)
+- Cross-server shadowing / confused-deputy claims
+- Credential exfiltration through MCP resource and sampling channels
+- SKILL.md frontmatter injection (description/trigger fields)
+- Rug-pull updates (a new version that adds network/exec/credential
+  capability absent from the prior version — see `acidtest diff`)
+- Unicode/invisible-character obfuscation (zero-width, bidi/Trojan-Source,
+  U+E0000 tag characters, mixed-script homoglyphs)
 - Hardcoded credentials and API keys
 - Data exfiltration to undeclared domains
-- Standard obfuscation techniques (base64, hex encoding)
-- Dynamic requires with variables or computed values
-- String concatenation bypasses: `require('child_' + 'process')`
-- Template literal bypasses: `` require(`mod_${name}`) ``
-- Property access bypasses: `global['child_process']`
-- Function constructor abuse: `new Function('return eval')()`
-- Undeclared network calls
-- Suspicious file system operations
+- Standard obfuscation (base64, hex, high-entropy strings)
+- Dynamic requires, string-concatenation and template-literal import
+  bypasses, property-access bypasses, Function-constructor abuse
+- Undeclared network calls and suspicious file system operations
 
-**What We May Miss (<10-15% of sophisticated attacks):**
+**What We May Miss:**
 - Advanced control flow obfuscation (multi-step indirection)
 - Encrypted or polymorphic payloads
 - Time-delayed execution
 - Data leaks via timing side channels
-- Unicode homograph attacks
 - Behavioral analysis (runtime-only detection)
 - Supply chain attacks (dependency vulnerabilities)
 - Zero-day exploitation techniques
+
+### Measured Detection (test corpus)
+
+We do not publish a single headline "detection rate" — a rate is only
+meaningful against a stated corpus, and a corpus we control can be tuned
+to produce any number we like. Instead we ship the corpus and let you
+regenerate the result: `npm run test:corpus`.
+
+Against the bundled corpus (`test-corpus/`), the current version scores:
+
+| Class                | Examples | Correct |
+|----------------------|----------|---------|
+| Vulnerable (detected as FAIL/DANGER) | 12 | 12 (100%) |
+| Legitimate (passed as PASS/WARN)     | 6  | 6 (100%)  |
+
+This corpus is deliberately small and hand-built to cover the threat
+classes above with at least one true-positive and matched
+false-positive guard each. **100% here means "we catch the attacks we
+wrote fixtures for and don't flag the clean examples we wrote" — it is a
+regression guard, not a claim about detection in the wild.** A real-world
+skill using a novel technique we have no pattern for will pass. The
+corpus grows as new patterns are added; the honest number to watch is
+whether it ever drops below 100% (a regression), not the percentage itself.
 
 ## How Static Analysis Works
 
@@ -81,6 +114,12 @@ global['child_process']  // CAUGHT by bracket notation detection
 ✅ **Function Constructor**
 ```javascript
 new Function('return eval')()  // CAUGHT by AST pattern matching
+```
+
+✅ **Invisible Unicode / Trojan Source**
+```javascript
+const safe​ = false;  // zero-width char CAUGHT (uo-001)
+// bidi override CAUGHT in code and markdown (uo-002/uo-003)
 ```
 
 ### Potentially Missed Bypasses

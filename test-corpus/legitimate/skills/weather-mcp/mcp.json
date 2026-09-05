@@ -1,0 +1,37 @@
+{
+  "name": "weather",
+  "version": "2.0.0",
+  "description": "Get current weather and forecasts for any city",
+  "transport": "stdio",
+  "command": "node",
+  "args": ["index.js"],
+  "env": {
+    "WEATHER_API_KEY": ""
+  },
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Returns the current weather for a city. Provide the city name and optionally a country code.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "city": { "type": "string", "description": "City name" },
+          "country": { "type": "string", "description": "ISO country code" }
+        },
+        "required": ["city"]
+      }
+    },
+    {
+      "name": "get_forecast",
+      "description": "Returns a multi-day forecast for a city.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "city": { "type": "string", "description": "City name" },
+          "days": { "type": "number", "description": "Number of days, 1-7" }
+        },
+        "required": ["city"]
+      }
+    }
+  ]
+}

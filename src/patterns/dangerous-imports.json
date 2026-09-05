@@ -8,7 +8,7 @@
       "severity": "CRITICAL",
       "match": {
         "type": "regex",
-        "value": "(import|require)\\s*\\(?['\"]child_process['\"]",
+        "value": "(import|require)\\s*\\(?['\"]child_process['\"]|from\\s+['\"]child_process['\"]",
         "flags": "g"
       },
       "layer": "code",
@@ -71,7 +71,7 @@
       "severity": "CRITICAL",
       "match": {
         "type": "regex",
-        "value": "(import|require)\\s*\\(?['\"]vm['\"]",
+        "value": "(import|require)\\s*\\(?['\"]vm['\"]|from\\s+['\"]vm['\"]",
         "flags": "g"
       },
       "layer": "code"
@@ -83,7 +83,7 @@
       "severity": "HIGH",
       "match": {
         "type": "regex",
-        "value": "(import|require)\\s*\\(?['\"]net['\"]",
+        "value": "(import|require)\\s*\\(?['\"]net['\"]|from\\s+['\"]net['\"]",
         "flags": "g"
       },
       "layer": "code"
@@ -95,7 +95,7 @@
       "severity": "HIGH",
       "match": {
         "type": "regex",
-        "value": "(import|require)\\s*\\(?['\"]dgram['\"]",
+        "value": "(import|require)\\s*\\(?['\"]dgram['\"]|from\\s+['\"]dgram['\"]",
         "flags": "g"
       },
       "layer": "code"

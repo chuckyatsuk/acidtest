@@ -13,7 +13,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 
 /**
  * Main CLI function
@@ -40,6 +40,8 @@ async function main() {
     await handleScan(args.slice(1));
   } else if (command === "scan-all") {
     await handleScanAll(args.slice(1));
+  } else if (command === "diff") {
+    await handleDiff(args.slice(1));
   } else if (command === "demo") {
     await handleDemo(args.slice(1));
   } else if (command === "serve") {
@@ -214,91 +216,118 @@ async function handleScanAll(args: string[]) {
 }
 
 /**
- * Handle 'demo' command
- * Runs built-in test fixtures to show the full output spectrum
+ * Handle 'diff' command
+ * Compares two versions of a skill/MCP server for rug-pull updates
  */
-async function handleDemo(args: string[]) {
-  console.log("AcidTest Demo - Running built-in test fixtures...\n");
+async function handleDiff(args: string[]) {
+  const jsonOutput = args.includes("--json");
+  const paths = args.filter((arg) => !arg.startsWith("--"));
 
-  // Find fixtures directory relative to this file
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const fixturesDir = join(__dirname, "..", "test-fixtures");
+  if (paths.length < 2) {
+    console.error("Error: diff needs two paths (old version, new version)");
+    console.error("Usage: acidtest diff <old-version-path> <new-version-path> [--json]");
+    process.exit(1);
+  }
 
-  const fixtures = [
-    { name: "PASS", path: join(fixturesDir, "fixture-pass") },
-    { name: "WARN", path: join(fixturesDir, "fixture-warn") },
-    { name: "FAIL", path: join(fixturesDir, "fixture-fail") },
-    { name: "DANGER", path: join(fixturesDir, "fixture-danger") },
-  ];
+  const { diffVersions } = await import("./diff.js");
 
-  const results = [];
+  try {
+    const diff = await diffVersions(paths[0], paths[1]);
 
-  for (let i = 0; i < fixtures.length; i++) {
-    const fixture = fixtures[i];
+    if (jsonOutput) {
+      console.log(JSON.stringify(diff, null, 2));
+    } else {
+      console.log(`\nAcidTest v${VERSION} — version diff`);
+      console.log(`\nSkill:      ${diff.skill.name}`);
+      console.log(`Old:        ${diff.oldPath} (score ${diff.oldScore}/100)`);
+      console.log(`New:        ${diff.newPath} (score ${diff.newScore}/100)`);
+      console.log(`\nVERDICT: ${diff.verdict}\n`);
 
-    try {
-      const result = await scanSkill(fixture.path);
-      results.push({ fixture: fixture.name, result });
-
-      console.log(`[${ fixture.name } Example]`);
-      reportToTerminal(result);
-
-      if (i < fixtures.length - 1) {
-        console.log("\n" + "─".repeat(60) + "\n");
+      if (diff.findings.length === 0) {
+        console.log("No new capabilities or permissions in the update.\n");
+      } else {
+        for (const finding of diff.findings) {
+          console.log(`  [${finding.severity}] ${finding.title}`);
+          console.log(`    ${finding.detail}`);
+          if (finding.evidence) console.log(`    ${finding.evidence}`);
+          console.log();
+        }
       }
-    } catch (error) {
-      console.warn(
-        `Warning: Could not scan ${fixture.name} fixture:`,
-        (error as Error).message,
-      );
     }
+
+    // Exit non-zero on a rug-pull so CI can gate on it
+    if (diff.verdict === "RUG_PULL") {
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error("Error diffing versions:", (error as Error).message);
+    process.exit(1);
   }
-
-  // Print summary
-  console.log("\n" + "=".repeat(60));
-  console.log("\nDemo Summary:");
-  console.log(
-    "AcidTest provides four security levels based on trust score (0-100):\n",
-  );
-
-  for (const { fixture, result } of results) {
-    const statusColor =
-      result.status === "PASS"
-        ? "green"
-        : result.status === "WARN"
-          ? "yellow"
-          : result.status === "FAIL"
-            ? "red"
-            : "red";
-
-    console.log(
-      `  ${result.status.padEnd(6)} (${result.score}/100) - ${getStatusDescription(result.status)}`,
-    );
-  }
-
-  console.log(
-    "\nRun 'acidtest scan <path>' to scan your own skills and tools.",
-  );
-  console.log("For more information, visit: https://acidtest.dev\n");
 }
 
 /**
- * Get status description for demo summary
+ * Handle 'demo' command
+ * Generates the Q4-2026 attack-class demo pack on demand and walks it
+ * with the real scanner. Fixtures are never shipped in the tarball.
  */
-function getStatusDescription(status: string): string {
-  switch (status) {
-    case "PASS":
-      return "Safe to use, no significant security concerns";
-    case "WARN":
-      return "Review findings before use, minor concerns";
-    case "FAIL":
-      return "Not recommended, significant security issues";
-    case "DANGER":
-      return "Do not use, critical security vulnerabilities";
-    default:
-      return "Unknown status";
+async function handleDemo(args: string[]) {
+  const { demoCases, materializeDemoPack } = await import("./demo-pack.js");
+  const { diffVersions } = await import("./diff.js");
+
+  console.log("AcidTest Demo — Q4 2026 attack classes\n");
+  console.log(
+    "Fixtures are generated on demand into a temp directory and scanned\n" +
+      "with the real scanner, then removed. Nothing is left on disk.\n",
+  );
+
+  const { paths, cleanup } = materializeDemoPack();
+  const summary: Array<{ title: string; verdict: string }> = [];
+
+  try {
+    const cases = demoCases();
+    for (let i = 0; i < cases.length; i++) {
+      const demoCase = cases[i];
+      console.log("\n" + "─".repeat(60) + "\n");
+      console.log(`[${demoCase.title}]`);
+      console.log(demoCase.about + "\n");
+
+      if (demoCase.id === "rug-pull") {
+        // Two-version case: diff v1 against v2.
+        const diff = await diffVersions(
+          join(paths[demoCase.id], "v1"),
+          join(paths[demoCase.id], "v2"),
+        );
+        console.log(
+          `  v1 score ${diff.oldScore}/100  →  v2 score ${diff.newScore}/100`,
+        );
+        console.log(`  VERDICT: ${diff.verdict}\n`);
+        for (const finding of diff.findings) {
+          console.log(`    [${finding.severity}] ${finding.title}`);
+        }
+        summary.push({ title: demoCase.title, verdict: diff.verdict });
+      } else {
+        const result = await scanSkill(paths[demoCase.id]);
+        reportToTerminal(result);
+        summary.push({
+          title: demoCase.title,
+          verdict: `${result.status} (${result.score}/100)`,
+        });
+      }
+    }
+  } finally {
+    cleanup();
   }
+
+  console.log("\n" + "=".repeat(60));
+  console.log("\nDemo Summary:\n");
+  for (const { title, verdict } of summary) {
+    console.log(`  ${verdict.padEnd(16)} ${title}`);
+  }
+  console.log(
+    "\nRun 'acidtest scan <path>' to scan your own skills and tools,",
+  );
+  console.log("or 'acidtest diff <old> <new>' to check an update for rug-pulls.");
+  console.log("Docs and source: https://github.com/currentlycurrently/acidtest\n");
 }
 
 /**
@@ -339,6 +368,7 @@ Security scanner for AI agent skills and MCP servers
 USAGE:
   acidtest scan <path> [--json] [--watch] [--fix] [--no-clear]
   acidtest scan-all <directory> [--json]
+  acidtest diff <old-version> <new-version> [--json]
   acidtest demo
   acidtest serve
   acidtest --version
@@ -347,6 +377,7 @@ USAGE:
 COMMANDS:
   scan          Scan a single skill/MCP server (SKILL.md, mcp.json, etc.)
   scan-all      Recursively scan all skills/servers in a directory
+  diff          Compare two versions of a skill for rug-pull updates
   demo          Run demo with built-in test fixtures
   serve         Start AcidTest as an MCP server for AI agents
 
@@ -383,7 +414,7 @@ EXAMPLES:
   # Start as MCP server (for use with Claude Desktop, etc.)
   acidtest serve
 
-For more information, visit: https://acidtest.dev
+Docs and source: https://github.com/currentlycurrently/acidtest
 `);
 }
 

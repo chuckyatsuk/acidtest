@@ -21,7 +21,7 @@ import {
 import { detectMCPManifest, parseMCPManifest } from "./loaders/mcp-loader.js";
 import { loadConfig, mergeConfig } from "./config.js";
 
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 
 /**
  * Main scan function
@@ -186,6 +186,7 @@ async function loadAgentSkill(
     path: skillDir,
     metadata,
     markdownContent,
+    rawFrontmatter: parsed.matter,
     codeFiles,
     hasManifest: true,
   };

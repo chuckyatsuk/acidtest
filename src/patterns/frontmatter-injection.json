@@ -1,0 +1,44 @@
+{
+  "category": "frontmatter-injection",
+  "patterns": [
+    {
+      "id": "fm-001",
+      "name": "trigger-broadening",
+      "description": "Trigger/keyword field claims the skill applies to every message or request",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(triggers?|keywords?|activation)\\s*:[^\\n]{0,200}\\b(always|every|all)\\s+(user\\s+)?(message|prompt|request|turn|conversation)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "frontmatter-injection"
+    },
+    {
+      "id": "fm-002",
+      "name": "forced-invocation",
+      "description": "Metadata demands the agent always use or load this skill",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(always|must)\\s+(use|invoke|load|activate|run)\\s+this\\s+(skill|tool)",
+        "flags": "i"
+      },
+      "layer": "markdown",
+      "category": "frontmatter-injection"
+    },
+    {
+      "id": "fm-003",
+      "name": "executable-frontmatter-field",
+      "description": "Frontmatter declares an executable field not part of the skill standard",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "^(command|exec|shell|run|postinstall|preinstall)\\s*:",
+        "flags": "im"
+      },
+      "layer": "markdown",
+      "category": "frontmatter-injection"
+    }
+  ]
+}

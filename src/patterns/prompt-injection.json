@@ -120,6 +120,78 @@
         "flags": "is"
       },
       "layer": "markdown"
+    },
+    {
+      "id": "pi-011",
+      "name": "fake-system-reminder",
+      "description": "Fake system-reminder block impersonating agent-harness messages",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "<\\s*/?\\s*system[-_ ]?reminder\\b",
+        "flags": "i"
+      },
+      "layer": "markdown"
+    },
+    {
+      "id": "pi-012",
+      "name": "fake-conversation-block",
+      "description": "Embedded fake tool-call or tool-result block impersonating the agent transcript",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "<\\s*/?\\s*(function_(calls|results)|tool_(use|result|response)|antml:[a-z]+)\\b",
+        "flags": "i"
+      },
+      "layer": "markdown"
+    },
+    {
+      "id": "pi-013",
+      "name": "embedded-tool-call-json",
+      "description": "Embedded tool-call JSON attempting to spoof agent actions",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "\"(tool_use|tool_calls|function_call)\"\\s*:",
+        "flags": "i"
+      },
+      "layer": "markdown"
+    },
+    {
+      "id": "pi-014",
+      "name": "ai-direct-address",
+      "description": "Text addressing the AI reading or reviewing the content directly",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(as|if\\s+you('re|\\s+are))\\s+(the|an?)\\s+(ai|llm|assistant|model|agent)\\s+(reviewing|reading|processing|analyzing|summarizing|scanning)",
+        "flags": "i"
+      },
+      "layer": "markdown"
+    },
+    {
+      "id": "pi-015",
+      "name": "ai-audience-callout",
+      "description": "Callout addressed to AI agents rather than human readers",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(attention|dear|note\\s+to)\\s+(all\\s+)?(ai|llm|claude|gpt|copilot|assistant|agent)s?\\b",
+        "flags": "i"
+      },
+      "layer": "markdown"
+    },
+    {
+      "id": "pi-016",
+      "name": "claimed-official-provenance",
+      "description": "Claims to be an official message from the AI vendor or the system",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "(message|instructions?|directive|notice)\\s+from\\s+(anthropic|openai|google|the\\s+(system|platform|developers?))",
+        "flags": "i"
+      },
+      "layer": "markdown"
     }
   ]
 }

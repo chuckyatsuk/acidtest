@@ -25,7 +25,7 @@ export function reportToTerminal(result: ScanResult, options: ReportOptions = {}
   // Show warning if no manifest found
   if (result.skill.hasManifest === false) {
     console.log(chalk.yellow('⚠  No manifest found. Running security scan without permission audit.'));
-    console.log(chalk.dim('   For full analysis, add SKILL.md: https://acidtest.dev/docs/manifests'));
+    console.log(chalk.dim('   For full analysis, add SKILL.md: https://github.com/currentlycurrently/acidtest#usage'));
     console.log();
   }
 
