@@ -21,7 +21,7 @@ jobs:
     name: Simple Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
@@ -45,7 +45,7 @@ jobs:
     name: Scan with Threshold
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
@@ -106,7 +106,7 @@ jobs:
     name: Scan All Skills
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
@@ -157,7 +157,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
