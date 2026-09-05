@@ -439,6 +439,7 @@ AcidTest v${VERSION}
 Security scanner for AI agent skills and MCP servers
 
 USAGE:
+  acidtest lint <path> [--json] [--quiet]
   acidtest scan <path> [--json] [--watch] [--fix] [--no-clear]
   acidtest scan-all <directory> [--json]
   acidtest diff <old-version> <new-version> [--json]
@@ -448,6 +449,7 @@ USAGE:
   acidtest --help
 
 COMMANDS:
+  lint          Lint your own MCP server's tool descriptions before publishing
   scan          Scan a single skill/MCP server (SKILL.md, mcp.json, etc.)
   scan-all      Recursively scan all skills/servers in a directory
   diff          Compare two versions of a skill for rug-pull updates
