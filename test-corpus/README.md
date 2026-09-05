@@ -1,7 +1,7 @@
 # AcidTest Test Corpus
 
-A small, hand-built corpus used to regression-test detection. It is **not
-shipped in the npm package** (`files` in package.json is `dist` only) —
+A small, hand-built corpus for regression-testing detection. It is not
+shipped in the npm package (`files` in package.json is `dist` only), because
 these directories contain intentionally malicious patterns that would be
 flagged if they landed in a consumer's `node_modules`.
 
@@ -25,8 +25,8 @@ test-corpus/
     python/       clean .py files
 ```
 
-- **vulnerable** examples must scan as `FAIL` or `DANGER`.
-- **legitimate** examples must scan as `PASS` or `WARN`.
+- vulnerable examples must scan as `FAIL` or `DANGER`.
+- legitimate examples must scan as `PASS` or `WARN`.
 
 Legitimate standalone code files are scanned as code-only (no synthetic
 manifest is wrapped around them), because that is how a bare downloaded

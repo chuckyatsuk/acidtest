@@ -1,14 +1,14 @@
 # AI Agent Skill Template
 
-A starter template for building secure AI agent skills and MCP servers with AcidTest pre-configured.
+A starter template for building AI agent skills and MCP servers, with AcidTest already wired in.
 
-## Features
+## What's included
 
-✅ **Pre-configured AcidTest** - Security scanning on every PR
-✅ **TypeScript setup** - Type-safe development
-✅ **SKILL.md template** - AgentSkills format
-✅ **Best practices** - Secure coding guidelines
-✅ **CI/CD ready** - GitHub Actions workflows included
+- AcidTest security scanning on every push and PR
+- TypeScript setup
+- A SKILL.md template in the AgentSkills format
+- Secure coding guidelines
+- GitHub Actions workflows
 
 ## Quick Start
 
@@ -39,7 +39,7 @@ Edit `src/handler.ts` with your skill's logic.
 npx acidtest scan .
 ```
 
-You should see a **PASS** score (80+/100).
+You should get a PASS score (80 or above).
 
 ## Project Structure
 
@@ -81,31 +81,31 @@ Edit `.acidtest.json` to customize security scanning:
 
 The template includes two workflows:
 
-**`acidtest.yml`** - Runs security scan on every push/PR
-- Fails if score < 80/100
-- Comments on PRs with detailed results
+**`acidtest.yml`** - Runs a security scan on every push and PR. Fails if the score drops below 80, and comments the results on the PR.
 
-**`test.yml`** - Runs your unit tests (if you add them)
+**`test.yml`** - Runs your unit tests, if you add them.
 
 ## Best Practices
 
-### ✅ DO:
+### Do
+
 - Declare all permissions in `SKILL.md` frontmatter
 - Use static `require()` and `import` statements
 - Document why you need each permission
 - Run `npx acidtest scan .` before committing
 - Keep dependencies minimal and audited
 
-### ❌ DON'T:
-- Use `eval()`, `Function()`, or `vm` module
-- Import `child_process` unless absolutely necessary
+### Don't
+
+- Use `eval()`, `Function()`, or the `vm` module
+- Import `child_process` unless you have to
 - Access undeclared environment variables
 - Make network calls without declaring browser/network tools
-- Obfuscate code or use base64 encoding unnecessarily
+- Obfuscate code or use base64 encoding without a reason
 
 ## Security Scanning
 
-This template uses [AcidTest](https://github.com/currentlycurrently/acidtest) for automated security scanning.
+This template uses [AcidTest](https://github.com/currentlycurrently/acidtest) to scan for security issues.
 
 ### Local Scanning
 
@@ -138,12 +138,12 @@ AcidTest uses a 100-point trust score:
 
 | Score | Status | Meaning |
 |-------|--------|---------|
-| 80-100 | PASS ✅ | Safe to use |
-| 50-79 | WARN ⚠️ | Review recommended |
-| 20-49 | FAIL ❌ | Not recommended |
-| 0-19 | DANGER 🔴 | Do not use |
+| 80-100 | PASS | Safe to use |
+| 50-79 | WARN | Review recommended |
+| 20-49 | FAIL | Not recommended |
+| 0-19 | DANGER | Do not use |
 
-**Goal:** Keep your skill at 80+ (PASS status)
+Aim to keep your skill at 80 or above (PASS).
 
 ## Troubleshooting
 
@@ -179,4 +179,4 @@ MIT
 
 ---
 
-**Built with [AcidTest](https://github.com/currentlycurrently/acidtest)** - Security scanner for AI agent skills
+Built with [AcidTest](https://github.com/currentlycurrently/acidtest), a security scanner for AI agent skills.

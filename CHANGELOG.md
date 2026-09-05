@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2026-09-05
 
-**2026 threat-model update.** Detection coverage for the agent-security
-attack classes that emerged after the February 2026 pattern freeze, plus
-repository hygiene. Fully backward compatible — no existing CLI flag or
-scan-target behavior changed; one additive command (`acidtest diff`).
+2026 threat-model update. Adds detection for the agent-security attack
+classes that emerged after the February 2026 pattern freeze, plus
+repository hygiene. Backward compatible: no existing CLI flag or
+scan-target behavior changed, and the only new command is `acidtest diff`.
 
 ### Added
 
@@ -73,9 +73,9 @@ scan-target behavior changed; one additive command (`acidtest diff`).
 
 ### Quality
 
-- ✅ 176 tests passing (was 115)
-- ✅ 134 patterns validated across 19 category files
-- ✅ Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
+- 176 tests passing (was 115)
+- 134 patterns validated across 19 category files
+- Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
 
 ### Removed
 
