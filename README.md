@@ -90,9 +90,38 @@ Or run without installing:
 npx acidtest scan ./path-to-skill
 ```
 
+## For MCP server authors: lint before you publish
+
+If you write an MCP server, run `acidtest lint` on it before you publish.
+It checks your own tool and parameter descriptions for the things a
+consumer's security scanner will flag — injected-looking instructions,
+`<IMPORTANT>`-style tags, "do not tell the user" directives, covert
+parameter names, and "use this instead of the official server" phrasing —
+and points at the exact line so you can fix it or confirm it's intentional.
+
+```bash
+# Lint a manifest, a source file, or a whole server directory
+acidtest lint ./my-server
+acidtest lint ./src/tools/weather.ts
+```
+
+It reads descriptions both from a static `mcp.json` and from
+`description:` string literals in your TypeScript/JavaScript/Python source,
+because that's where real servers declare them. Output is eslint-shaped and
+it exits non-zero on error-level findings, so it drops into a pre-commit
+hook or CI.
+
+The point is precision: it stays quiet on legitimate wording. Run against
+the seven official `modelcontextprotocol/servers` reference servers, it
+reports zero findings — while still catching a poisoned description. It
+does not cry wolf on "you must provide a valid input."
+
 ## Usage
 
 ```bash
+# Lint your own MCP server before publishing
+acidtest lint ./my-server
+
 # Walk the Q4-2026 attack classes with the real scanner
 # (fixtures are generated on the fly, nothing is left on disk)
 acidtest demo

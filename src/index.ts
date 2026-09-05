@@ -42,6 +42,8 @@ async function main() {
     await handleScanAll(args.slice(1));
   } else if (command === "diff") {
     await handleDiff(args.slice(1));
+  } else if (command === "lint") {
+    await handleLint(args.slice(1));
   } else if (command === "demo") {
     await handleDemo(args.slice(1));
   } else if (command === "serve") {
@@ -59,25 +61,16 @@ async function main() {
 async function handleScan(args: string[]) {
   // Parse flags
   const jsonOutput = args.includes("--json");
-  const watchMode = args.includes("--watch") || args.includes("-w");
-  const noClear = args.includes("--no-clear");
   const showFix = args.includes("--fix");
-  const paths = args.filter((arg) => !arg.startsWith("--") && arg !== "-w");
+  const paths = args.filter((arg) => !arg.startsWith("--"));
 
   if (paths.length === 0) {
-    console.error("Error: No skill path provided");
-    console.error("Usage: acidtest scan <path-to-skill> [--json] [--watch]");
+    console.error("Error: No path provided");
+    console.error("Usage: acidtest scan <path> [--json] [--fix]");
     process.exit(1);
   }
 
   const skillPath = paths[0];
-
-  // Handle watch mode
-  if (watchMode) {
-    const { watchMode: startWatchMode } = await import('./watch.js');
-    await startWatchMode(skillPath, { noClear, jsonOutput, showRemediation: showFix });
-    return; // Watch mode handles its own exit
-  }
 
   try {
     // Load config from skill directory
@@ -266,6 +259,77 @@ async function handleDiff(args: string[]) {
 }
 
 /**
+ * Handle 'lint' command
+ * Author-side linter: checks the author's OWN manifest/skill for injected-
+ * looking text, covert parameters, and shadowing claims before publishing.
+ */
+async function handleLint(args: string[]) {
+  const jsonOutput = args.includes("--json");
+  const quiet = args.includes("--quiet"); // errors only, suppress warnings
+  const paths = args.filter((a) => !a.startsWith("--"));
+
+  if (paths.length === 0) {
+    console.error("Error: no path provided");
+    console.error("Usage: acidtest lint <mcp.json|SKILL.md|dir> [--json] [--quiet]");
+    process.exit(2);
+  }
+
+  const { lint } = await import("./lint.js");
+
+  try {
+    const result = await lint(paths[0]);
+
+    if (jsonOutput) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      const chalk = (await import("chalk")).default;
+      const shown = quiet
+        ? result.findings.filter(
+            (f) => f.severity === "CRITICAL" || f.severity === "HIGH",
+          )
+        : result.findings;
+
+      if (shown.length === 0) {
+        console.log(chalk.green("✓ clean — no injected-looking text in your descriptions"));
+      } else {
+        let currentFile = "";
+        for (const f of shown) {
+          if (f.file !== currentFile) {
+            currentFile = f.file;
+            console.log("\n" + chalk.underline(f.file));
+          }
+          const sev =
+            f.severity === "CRITICAL" || f.severity === "HIGH"
+              ? chalk.red(f.severity.toLowerCase())
+              : chalk.yellow(f.severity.toLowerCase());
+          const loc = chalk.dim(`${f.line}:${f.column}`);
+          console.log(`  ${loc}  ${sev}  ${f.message}  ${chalk.dim(f.ruleId)}`);
+          console.log(`         ${chalk.dim(f.excerpt)}`);
+        }
+        console.log(
+          "\n" +
+            chalk.bold(
+              `${result.errorCount} error(s), ${result.warningCount} warning(s)`,
+            ),
+        );
+        console.log(
+          chalk.dim(
+            "If a flag is a false alarm on legitimate wording, rephrase it or\n" +
+              "confirm it's intentional — this is what a consumer's scanner will see.",
+          ),
+        );
+      }
+    }
+
+    // Exit non-zero if any error-level finding, so CI / pre-commit gates.
+    if (result.errorCount > 0) process.exit(1);
+  } catch (error) {
+    console.error("Error:", (error as Error).message);
+    process.exit(2);
+  }
+}
+
+/**
  * Handle 'demo' command
  * Generates the Q4-2026 attack-class demo pack on demand and walks it
  * with the real scanner. Fixtures are never shipped in the tarball.
@@ -366,7 +430,8 @@ AcidTest v${VERSION}
 Security scanner for AI agent skills and MCP servers
 
 USAGE:
-  acidtest scan <path> [--json] [--watch] [--fix] [--no-clear]
+  acidtest lint <path> [--json] [--quiet]
+  acidtest scan <path> [--json] [--fix]
   acidtest scan-all <directory> [--json]
   acidtest diff <old-version> <new-version> [--json]
   acidtest demo
@@ -375,6 +440,7 @@ USAGE:
   acidtest --help
 
 COMMANDS:
+  lint          Lint your own MCP server's tool descriptions before publishing
   scan          Scan a single skill/MCP server (SKILL.md, mcp.json, etc.)
   scan-all      Recursively scan all skills/servers in a directory
   diff          Compare two versions of a skill for rug-pull updates
@@ -383,9 +449,7 @@ COMMANDS:
 
 OPTIONS:
   --json        Output results as JSON
-  --watch, -w   Watch for file changes and re-scan automatically
   --fix         Show actionable remediation suggestions for findings
-  --no-clear    Don't clear terminal between scans (watch mode only)
   --version     Print version number
   --help        Show this help message
 
@@ -404,9 +468,6 @@ EXAMPLES:
 
   # Show remediation suggestions for findings
   acidtest scan ./my-skill --fix
-
-  # Watch for changes and re-scan automatically
-  acidtest scan ./my-skill --watch
 
   # Scan all skills/servers in a directory
   acidtest scan-all ./directory

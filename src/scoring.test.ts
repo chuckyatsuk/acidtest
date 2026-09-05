@@ -200,6 +200,35 @@ describe("determineStatus", () => {
     expect(determineStatus(19)).toBe("DANGER");
     expect(determineStatus(0)).toBe("DANGER");
   });
+
+  it("floors a single CRITICAL finding to at least FAIL", () => {
+    const oneCritical = [
+      { severity: "CRITICAL", category: "mcp-exfil", title: "x", detail: "" },
+    ] as any;
+    // A high score that would otherwise be PASS/WARN is floored to FAIL
+    expect(determineStatus(90, oneCritical)).toBe("FAIL");
+    expect(determineStatus(72, oneCritical)).toBe("FAIL");
+    // An already-low score stays where it is
+    expect(determineStatus(30, oneCritical)).toBe("FAIL");
+    expect(determineStatus(10, oneCritical)).toBe("DANGER");
+  });
+
+  it("escalates two or more CRITICAL findings to DANGER", () => {
+    const twoCritical = [
+      { severity: "CRITICAL", category: "mcp-exfil", title: "x", detail: "" },
+      { severity: "CRITICAL", category: "tool-poisoning", title: "y", detail: "" },
+    ] as any;
+    expect(determineStatus(90, twoCritical)).toBe("DANGER");
+  });
+
+  it("does not floor when there is no CRITICAL", () => {
+    const highsOnly = [
+      { severity: "HIGH", category: "x", title: "x", detail: "" },
+      { severity: "HIGH", category: "y", title: "y", detail: "" },
+    ] as any;
+    expect(determineStatus(60, highsOnly)).toBe("WARN");
+    expect(determineStatus(85, highsOnly)).toBe("PASS");
+  });
 });
 
 describe("generateRecommendation", () => {
