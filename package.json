@@ -53,9 +53,9 @@
     "glob": "^13.0.6",
     "gray-matter": "^4.0.3",
     "ora": "^9.3.0",
-    "tree-sitter": "^0.21.1",
-    "tree-sitter-python": "^0.21.0",
-    "typescript": "^5.3.3"
+    "tree-sitter": "^0.25.1",
+    "tree-sitter-python": "^0.25.0",
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
