@@ -149,6 +149,114 @@ AcidTest scanned **2,386 public OpenClaw skills** from the openclaw-skills repos
 - Namespace squatting attacks
 - Base64-encoded remote code execution
 
+## Daily driver
+
+Make AcidTest part of a working stack, not a one-off. Every command below
+exits non-zero on `FAIL`/`DANGER`, so hooks and scripts can gate on it.
+
+### Scan your installed plugins and skills
+
+```bash
+# Audit everything you already have installed
+acidtest scan-all ~/.claude/plugins
+acidtest scan-all ~/.claude/skills
+
+# Exits 1 if any skill is FAIL/DANGER — drop it in a cron or a shell alias
+```
+
+### Claude Code hook: scan on install, fail loud
+
+Block a skill or plugin before it is ever used. A Claude Code `PreToolUse`
+hook receives the tool call as **JSON on stdin** and blocks the action by
+**exiting with code 2**. This hook watches `Bash` calls that look like a
+skill/plugin install, scans the target directory, and refuses on a bad
+score.
+
+Install the ready-made hook:
+
+```bash
+mkdir -p ~/.claude/hooks
+curl -o ~/.claude/hooks/acidtest-preinstall.sh \
+  https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/claude-code-preinstall.sh
+chmod +x ~/.claude/hooks/acidtest-preinstall.sh
+```
+
+Or write it yourself — this is the whole thing:
+
+```bash
+#!/usr/bin/env bash
+# Blocks a Claude Code install action when AcidTest flags the target.
+set -euo pipefail
+
+# PreToolUse passes the tool call as JSON on stdin.
+payload="$(cat)"
+cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // empty')"
+
+# Only act on install-shaped commands; let everything else through (exit 0).
+case "$cmd" in
+  *"acidtest"*) exit 0 ;;                       # don't scan our own scans
+  *install*|*"plugin add"*|*clone*) ;;          # scan these
+  *) exit 0 ;;
+esac
+
+# Scan the project directory the session is running in.
+target="${CLAUDE_PROJECT_DIR:-.}"
+if ! acidtest scan "$target" --json > /tmp/acidtest-preinstall.json 2>/dev/null; then
+  status="$(jq -r '.status' /tmp/acidtest-preinstall.json)"
+  {
+    echo "🛑 AcidTest blocked this action: $target is $status"
+    jq -r '.findings[] | select(.severity=="CRITICAL" or .severity=="HIGH")
+           | "  [\(.severity)] \(.title): \(.detail)"' /tmp/acidtest-preinstall.json
+  } >&2
+  exit 2   # exit 2 is what tells Claude Code to block the tool call
+fi
+exit 0
+```
+
+Wire it into `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/acidtest-preinstall.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+> The load-bearing parts: read the tool call from **stdin**, and **`exit 2`**
+> to block (any other exit lets the action proceed). Tune the `case`
+> matcher to however your install flow is invoked. `acidtest` and `jq` must
+> be on `PATH` for the hook process.
+
+For a postinstall-style check instead of a live hook, the same idea works
+as a plain script you run against a directory — `acidtest scan <dir>` exits
+non-zero on `FAIL`/`DANGER`, so `acidtest scan ./new-skill || echo blocked`
+is enough.
+
+### Watch a skills directory while you work
+
+```bash
+# Re-scan on every file change; great while developing a skill
+acidtest scan ./my-skill --watch
+
+# Keep an eye on a whole directory as you add to it
+acidtest scan ~/.claude/skills --watch
+```
+
+### Catch a rug-pull before you upgrade
+
+```bash
+# Before replacing v1 with v2, diff the two — exits 1 on a RUG_PULL verdict
+acidtest diff ./skill-v1 ./skill-v2
+```
+
 ## CI/CD Integration
 
 ### GitHub Actions
