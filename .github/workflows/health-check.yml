@@ -1,0 +1,67 @@
+name: health-check
+
+# Weekly "is it still alive and clean" check. Runs the suite on a current
+# Node, checks for new npm advisories, and opens an issue ONLY if something
+# is wrong — so a silent week means healthy. Keeps a security tool from
+# quietly rotting without demanding attention when nothing's changed.
+
+on:
+  schedule:
+    - cron: "0 14 * * 1" # Mondays 14:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tests and pattern validation
+        id: checks
+        run: |
+          npm run validate:patterns
+          npm test
+          npm run build
+
+      - name: Dependency audit (report only)
+        id: audit
+        run: |
+          # Non-blocking: capture advisories for the issue body, don't fail here.
+          npm audit --omit=dev --json > audit.json || true
+          COUNT=$(node -e "try{const a=require('./audit.json');console.log(a.metadata?.vulnerabilities?.total||0)}catch{console.log(0)}")
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Open an issue if audit found something
+        if: steps.audit.outputs.count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const count = '${{ steps.audit.outputs.count }}';
+            const title = `Weekly health check: ${count} dependency advisory(ies)`;
+            const body = [
+              `The weekly health check found ${count} production dependency advisory(ies).`,
+              '',
+              'Run `npm audit` locally to see them, and `npm audit fix` (or bump the',
+              'offending dep) to clear. This issue was opened automatically; close it',
+              'once resolved.',
+            ].join('\n');
+            // Avoid duplicate issues: reuse an open one with the same title prefix.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'health-check',
+            });
+            if (existing.data.some(i => i.title.startsWith('Weekly health check:'))) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title, body, labels: ['health-check', 'dependencies'],
+            });
