@@ -37,6 +37,9 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
   // Unicode/invisible-character obfuscation patterns
   const unicodePatterns = await loadPatterns('unicode-obfuscation');
 
+  // Credential-exfiltration-via-MCP-channel patterns
+  const mcpExfilPatterns = await loadPatterns('mcp-exfil');
+
   // Combine all code-layer patterns
   const allPatterns = [
     ...dangerousImports,
@@ -46,7 +49,8 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
     ...credentialPatterns,
     ...dangerousImportsPython,
     ...dangerousCallsPython,
-    ...unicodePatterns
+    ...unicodePatterns,
+    ...mcpExfilPatterns
   ].filter(p => p.layer === 'code');
 
   // Scan each code file

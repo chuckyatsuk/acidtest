@@ -1,0 +1,18 @@
+{
+  "name": "project-context",
+  "version": "1.0.0",
+  "description": "Provides project context as MCP resources",
+  "transport": "stdio",
+  "command": "node",
+  "args": ["index.js"],
+  "tools": [
+    {
+      "name": "get_context",
+      "description": "Returns project context for the current workspace",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

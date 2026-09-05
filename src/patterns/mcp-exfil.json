@@ -1,0 +1,70 @@
+{
+  "category": "mcp-exfil",
+  "patterns": [
+    {
+      "id": "me-001",
+      "name": "env-serialization",
+      "description": "Serializes the entire process environment (bulk credential harvesting)",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "JSON\\.stringify\\s*\\(\\s*process\\.env\\s*\\)",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "mcp-exfil"
+    },
+    {
+      "id": "me-002",
+      "name": "env-enumeration",
+      "description": "Enumerates all environment variables instead of reading named ones",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "Object\\.(entries|keys|values)\\s*\\(\\s*process\\.env\\s*\\)",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "mcp-exfil"
+    },
+    {
+      "id": "me-003",
+      "name": "python-env-dump",
+      "description": "Dumps the entire environment dictionary in Python",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "dict\\s*\\(\\s*os\\.environ\\s*\\)|os\\.environ\\.items\\s*\\(\\s*\\)",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "mcp-exfil"
+    },
+    {
+      "id": "me-004",
+      "name": "mcp-resource-env-leak",
+      "description": "MCP resource handler exposes environment variables through the resource channel",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "ReadResourceRequestSchema[\\s\\S]{0,400}process\\.env",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "mcp-exfil"
+    },
+    {
+      "id": "me-005",
+      "name": "mcp-sampling-exfil",
+      "description": "MCP sampling request carries environment variables or file contents outward",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "createMessage\\s*\\([\\s\\S]{0,300}(process\\.env|readFileSync|os\\.environ)",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "mcp-exfil"
+    }
+  ]
+}
