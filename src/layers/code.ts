@@ -34,6 +34,9 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
   const dangerousImportsPython = await loadPatterns('dangerous-imports-python');
   const dangerousCallsPython = await loadPatterns('dangerous-calls-python');
 
+  // Unicode/invisible-character obfuscation patterns
+  const unicodePatterns = await loadPatterns('unicode-obfuscation');
+
   // Combine all code-layer patterns
   const allPatterns = [
     ...dangerousImports,
@@ -42,7 +45,8 @@ export async function scanCode(skill: Skill): Promise<LayerResult> {
     ...obfuscationPatterns,
     ...credentialPatterns,
     ...dangerousImportsPython,
-    ...dangerousCallsPython
+    ...dangerousCallsPython,
+    ...unicodePatterns
   ].filter(p => p.layer === 'code');
 
   // Scan each code file
