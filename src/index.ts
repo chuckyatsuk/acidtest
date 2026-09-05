@@ -40,6 +40,8 @@ async function main() {
     await handleScan(args.slice(1));
   } else if (command === "scan-all") {
     await handleScanAll(args.slice(1));
+  } else if (command === "diff") {
+    await handleDiff(args.slice(1));
   } else if (command === "demo") {
     await handleDemo(args.slice(1));
   } else if (command === "serve") {
@@ -214,6 +216,56 @@ async function handleScanAll(args: string[]) {
 }
 
 /**
+ * Handle 'diff' command
+ * Compares two versions of a skill/MCP server for rug-pull updates
+ */
+async function handleDiff(args: string[]) {
+  const jsonOutput = args.includes("--json");
+  const paths = args.filter((arg) => !arg.startsWith("--"));
+
+  if (paths.length < 2) {
+    console.error("Error: diff needs two paths (old version, new version)");
+    console.error("Usage: acidtest diff <old-version-path> <new-version-path> [--json]");
+    process.exit(1);
+  }
+
+  const { diffVersions } = await import("./diff.js");
+
+  try {
+    const diff = await diffVersions(paths[0], paths[1]);
+
+    if (jsonOutput) {
+      console.log(JSON.stringify(diff, null, 2));
+    } else {
+      console.log(`\nAcidTest v${VERSION} — version diff`);
+      console.log(`\nSkill:      ${diff.skill.name}`);
+      console.log(`Old:        ${diff.oldPath} (score ${diff.oldScore}/100)`);
+      console.log(`New:        ${diff.newPath} (score ${diff.newScore}/100)`);
+      console.log(`\nVERDICT: ${diff.verdict}\n`);
+
+      if (diff.findings.length === 0) {
+        console.log("No new capabilities or permissions in the update.\n");
+      } else {
+        for (const finding of diff.findings) {
+          console.log(`  [${finding.severity}] ${finding.title}`);
+          console.log(`    ${finding.detail}`);
+          if (finding.evidence) console.log(`    ${finding.evidence}`);
+          console.log();
+        }
+      }
+    }
+
+    // Exit non-zero on a rug-pull so CI can gate on it
+    if (diff.verdict === "RUG_PULL") {
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error("Error diffing versions:", (error as Error).message);
+    process.exit(1);
+  }
+}
+
+/**
  * Handle 'demo' command
  * Runs built-in test fixtures to show the full output spectrum
  */
@@ -339,6 +391,7 @@ Security scanner for AI agent skills and MCP servers
 USAGE:
   acidtest scan <path> [--json] [--watch] [--fix] [--no-clear]
   acidtest scan-all <directory> [--json]
+  acidtest diff <old-version> <new-version> [--json]
   acidtest demo
   acidtest serve
   acidtest --version
@@ -347,6 +400,7 @@ USAGE:
 COMMANDS:
   scan          Scan a single skill/MCP server (SKILL.md, mcp.json, etc.)
   scan-all      Recursively scan all skills/servers in a directory
+  diff          Compare two versions of a skill for rug-pull updates
   demo          Run demo with built-in test fixtures
   serve         Start AcidTest as an MCP server for AI agents
 
