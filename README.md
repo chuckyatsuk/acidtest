@@ -67,13 +67,15 @@ Abridged output from `acidtest scan test-fixtures/fixture-danger` — one of the
 
 - **Command & Code Injection** - `eval()`, `exec()`, shell injection, unsafe deserialization
 - **Data Exfiltration** - Tracks data flow from env vars/secrets to network calls
-- **Credential Theft** - Hardcoded API keys, SSH key injection, token leaks
+- **Credential Theft** - Hardcoded API keys, SSH key injection, token leaks, MCP-channel env exfil
 - **C2 Callbacks** - Suspicious network requests to raw IPs or sketchy domains
-- **Obfuscation** - Base64/hex payloads, entropy analysis
-- **Prompt Injection** - Instruction override attempts in SKILL.md
+- **Obfuscation** - Base64/hex payloads, entropy analysis, invisible-Unicode/Trojan-Source hiding
+- **Prompt Injection** - Instruction override in SKILL.md body and frontmatter, plus 2026 phrasings (fake system-reminder blocks, embedded tool-call JSON)
+- **MCP Tool Poisoning** - Instructions smuggled into tool/parameter descriptions; cross-server shadowing
+- **Rug-Pull Updates** - `acidtest diff` flags a new version that adds capability the old one lacked
 - **Permission Escalation** - Undeclared filesystem/network/shell access
 
-**104 security patterns** across 14 threat categories. Supports Python and TypeScript/JavaScript.
+**134 security patterns** across 19 category files, plus AST, dataflow, and version-diff analysis. Supports Python and TypeScript/JavaScript. Run `npm run validate:patterns` to regenerate the count.
 
 ## Install
 

@@ -9,7 +9,6 @@ dist/
 
 # Test data (local only)
 test-skills/
-test-corpus/
 
 # OS junk
 .DS_Store

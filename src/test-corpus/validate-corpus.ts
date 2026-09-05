@@ -21,7 +21,7 @@ interface CorpusFile {
   path: string;
   name: string;
   category: "vulnerable" | "legitimate";
-  language: "python" | "typescript";
+  language: "python" | "typescript" | "skill";
   expectedPass: boolean; // true if should PASS, false if should FAIL/DANGER
 }
 
@@ -63,6 +63,25 @@ function getCorpusFiles(): CorpusFile[] {
         continue;
       }
     }
+
+    // Whole skill/MCP-server directories (SKILL.md or manifest based) —
+    // used for markdown- and manifest-level threat classes that have no
+    // standalone code-file representation.
+    const skillsDir = join(CORPUS_DIR, category, "skills");
+    try {
+      for (const entry of readdirSync(skillsDir)) {
+        const path = join(skillsDir, entry);
+        files.push({
+          path,
+          name: entry,
+          category,
+          language: "skill",
+          expectedPass: category === "legitimate",
+        });
+      }
+    } catch (error) {
+      // Directory doesn't exist or is empty
+    }
   }
 
   return files;
@@ -77,6 +96,19 @@ function createTempSkill(file: CorpusFile): string {
 
   // Create temp skill directory
   mkdirSync(skillDir, { recursive: true });
+
+  // Legitimate code files are scanned as code-only (no manifest), which is
+  // how a bare downloaded file is actually encountered. Wrapping them in a
+  // SKILL.md that declares no permissions would manufacture a cross-reference
+  // mismatch (undeclared network/env) and produce false positives that the
+  // scanner does not produce on the file itself.
+  if (file.category === "legitimate") {
+    const ext = extname(file.name);
+    const codeFileName = ext === ".py" ? "code.py" : "index.ts";
+    const content = readFileSync(file.path, "utf-8");
+    writeFileSync(join(skillDir, codeFileName), content);
+    return skillDir;
+  }
 
   // Create SKILL.md with realistic content based on vulnerability type
   let skillMd = `---
@@ -174,6 +206,27 @@ async function validateFile(file: CorpusFile): Promise<ValidationResult> {
   let skillDir: string | null = null;
 
   try {
+    // Skill directories are scanned in place; code files get a temp wrapper
+    if (file.language === "skill") {
+      const result = await scanSkill(file.path, false);
+      let passed: boolean;
+      let message: string;
+
+      if (file.expectedPass) {
+        passed = result.status === "PASS" || result.status === "WARN";
+        message = passed
+          ? `✓ Correctly identified as safe (${result.status})`
+          : `✗ FALSE POSITIVE: Flagged as ${result.status} (should be PASS/WARN)`;
+      } else {
+        passed = result.status === "FAIL" || result.status === "DANGER";
+        message = passed
+          ? `✓ Correctly detected as vulnerable (${result.status})`
+          : `✗ FALSE NEGATIVE: Returned ${result.status} (should be FAIL/DANGER)`;
+      }
+
+      return { file, status: result.status, score: result.score, passed, message };
+    }
+
     // Create temporary skill wrapper
     skillDir = createTempSkill(file);
 
@@ -296,14 +349,15 @@ async function main() {
 
     console.log(`Total files scanned:       ${results.length}`);
     console.log(`Vulnerable examples:       ${vulnerableFiles.length}`);
-    console.log(`  - Correctly detected:    ${vulnerableDetected} / ${vulnerableFiles.length}`);
+    console.log(`  - Correctly detected:    ${vulnerableDetected} / ${vulnerableFiles.length} (${(vulnerableDetected / vulnerableFiles.length * 100).toFixed(1)}%)`);
     console.log(`Legitimate examples:       ${legitimateFiles.length}`);
-    console.log(`  - Correctly passed:      ${legitimatePassed} / ${legitimateFiles.length}`);
+    console.log(`  - Correctly passed:      ${legitimatePassed} / ${legitimateFiles.length} (${(legitimatePassed / legitimateFiles.length * 100).toFixed(1)}%)`);
     console.log();
 
     // Separate Python and TypeScript issues
     const pythonFalseNegatives = falseNegatives.filter(r => r.file.language === "python");
-    const tsFalseNegatives = falseNegatives.filter(r => r.file.language === "typescript");
+    // Skill-directory false negatives count as hard failures, like TypeScript
+    const tsFalseNegatives = falseNegatives.filter(r => r.file.language !== "python");
     const tsFalsePositives = falsePositives.filter(r => r.file.language === "typescript");
     const pyFalsePositives = falsePositives.filter(r => r.file.language === "python");
 
