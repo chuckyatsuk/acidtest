@@ -5,12 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-05
+
+MCP-first rework. AcidTest is now focused on the MCP server and agent-skill
+supply chain: a linter authors run before publishing, plus a leaner scanner.
+This is a breaking release — see "Removed" below.
+
+### Added
+
+- **`acidtest lint`** — an author-side linter for MCP tool descriptions.
+  Checks your own manifest and the `description:` string literals in your
+  TypeScript/JavaScript/Python source for injected-looking instructions,
+  `<IMPORTANT>`-style tags, "do not tell the user" directives, covert
+  parameter names, and shadowing phrasing. eslint-shaped output
+  (file:line:col, rule, severity, excerpt); exits non-zero on error-level
+  findings for pre-commit/CI. Stays quiet on legitimate wording: run against
+  the seven official `modelcontextprotocol/servers` reference servers it
+  reports zero findings.
+- **`python-sinks` pattern pack** — regex detection for the top Python sinks
+  (`subprocess` with `shell=True`, `os.system`/`os.popen`, `exec`,
+  `pickle.loads`, unsafe `yaml.load`), replacing the removed Python AST.
+
+### Changed
+
+- **Scoring**: a single CRITICAL finding now floors the status to at least
+  FAIL; two or more is DANGER. A high-confidence attack (env exfil, tool
+  poisoning) is never reported as a mere warning.
+- **Framing**: re-centered on MCP servers and the agent-skill supply chain
+  rather than the February 2026 OpenClaw/ClawHub incident that prompted the
+  original tool. Description, keywords, and README lead with MCP.
+- `scan` now runs two analysis layers (injection + code) instead of five.
+- Docs simplified throughout; prose emoji removed.
+
+### Removed
+
+- **BREAKING: `scan --watch`** (watch mode).
+- **BREAKING: Python AST analysis.** Python source is now covered by the
+  regex `python-sinks` pack rather than tree-sitter; some deep Python
+  constructs the AST caught are no longer detected.
+- The dataflow/taint engine, the permissions and cross-reference layers
+  (both self-disabled for MCP servers), and the tree-sitter parsers.
+- Six dead pattern files (SQL/XSS/prototype-pollution/insecure-crypto/
+  ReDoS/Python-deserialization) that were shipped but loaded by nothing.
+  The honest pattern count is now 84 (was reported as 134).
+
+### Quality
+
+- 144 tests passing
+- 84 patterns validated across 12 category files
+- Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
+- Net ~3,900 fewer lines of code
+
 ## [1.1.0] - 2026-09-05
 
-**2026 threat-model update.** Detection coverage for the agent-security
-attack classes that emerged after the February 2026 pattern freeze, plus
-repository hygiene. Fully backward compatible — no existing CLI flag or
-scan-target behavior changed; one additive command (`acidtest diff`).
+2026 threat-model update. Adds detection for the agent-security attack
+classes that emerged after the February 2026 pattern freeze, plus
+repository hygiene. Backward compatible: no existing CLI flag or
+scan-target behavior changed, and the only new command is `acidtest diff`.
 
 ### Added
 
@@ -73,9 +124,9 @@ scan-target behavior changed; one additive command (`acidtest diff`).
 
 ### Quality
 
-- ✅ 176 tests passing (was 115)
-- ✅ 134 patterns validated across 19 category files
-- ✅ Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
+- 176 tests passing (was 115)
+- 134 patterns validated across 19 category files
+- Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
 
 ### Removed
 

@@ -1,0 +1,83 @@
+{
+  "category": "python-sinks",
+  "patterns": [
+    {
+      "id": "py-001",
+      "name": "subprocess-shell-true",
+      "description": "subprocess call with shell=True (command injection risk)",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "subprocess\\.(run|call|Popen|check_output|check_call)\\s*\\([^)]*shell\\s*=\\s*True",
+        "flags": "s"
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    },
+    {
+      "id": "py-002",
+      "name": "os-system",
+      "description": "os.system() executes a shell command",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "\\bos\\.system\\s*\\(",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    },
+    {
+      "id": "py-003",
+      "name": "os-popen",
+      "description": "os.popen() opens a pipe to a shell command",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "\\bos\\.popen\\s*\\(",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    },
+    {
+      "id": "py-004",
+      "name": "python-exec",
+      "description": "exec() runs arbitrary Python code",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "(^|[^.\\w])exec\\s*\\(",
+        "flags": "m"
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    },
+    {
+      "id": "py-005",
+      "name": "pickle-loads",
+      "description": "pickle.loads()/load() deserializes untrusted data (RCE risk)",
+      "severity": "CRITICAL",
+      "match": {
+        "type": "regex",
+        "value": "\\bpickle\\.(loads|load)\\s*\\(",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    },
+    {
+      "id": "py-006",
+      "name": "yaml-unsafe-load",
+      "description": "yaml.load() without SafeLoader can execute arbitrary objects",
+      "severity": "HIGH",
+      "match": {
+        "type": "regex",
+        "value": "\\byaml\\.load\\s*\\((?![^)]*Safe)",
+        "flags": ""
+      },
+      "layer": "code",
+      "category": "python-sinks"
+    }
+  ]
+}

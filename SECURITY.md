@@ -1,8 +1,6 @@
 # Security Policy
 
-## Our Commitment
-
-AcidTest is a security tool designed to protect the AI agent ecosystem. We take the security of AcidTest itself seriously and welcome responsible disclosure of any vulnerabilities.
+AcidTest is a security tool for the AI agent ecosystem. We welcome responsible disclosure of vulnerabilities in AcidTest itself.
 
 ## Scope
 
@@ -143,7 +141,7 @@ We use this rubric to classify security issues:
 
 ## Disclosure Policy
 
-### Our Commitments
+### What We Commit To
 
 When you report a vulnerability:
 

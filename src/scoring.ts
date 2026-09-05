@@ -45,13 +45,29 @@ export function calculateScore(findings: Finding[]): number {
 }
 
 /**
- * Determine overall status from score
+ * Determine overall status from score and findings.
+ *
+ * Score sets the baseline band. On top of that, a single CRITICAL finding
+ * floors the status at FAIL: a high-confidence attack (env exfil, tool
+ * poisoning, a concealment directive) is never merely a "WARN," regardless
+ * of how few other findings there are. This matters now that the scanner
+ * runs two layers instead of five — one real CRITICAL used to be joined by
+ * a stacking cross-reference finding that pushed the score down on its own;
+ * flooring makes the intent explicit rather than relying on that accident.
  */
-export function determineStatus(score: number): Status {
-  if (score >= 80) return 'PASS';
-  if (score >= 50) return 'WARN';
-  if (score >= 20) return 'FAIL';
-  return 'DANGER';
+export function determineStatus(score: number, findings: Finding[] = []): Status {
+  const scoreBand: Status =
+    score >= 80 ? 'PASS' : score >= 50 ? 'WARN' : score >= 20 ? 'FAIL' : 'DANGER';
+
+  const criticalCount = findings.filter((f) => f.severity === 'CRITICAL').length;
+
+  // Two or more CRITICALs is DANGER; a single CRITICAL floors at FAIL.
+  if (criticalCount >= 2) return 'DANGER';
+  if (criticalCount === 1) {
+    return scoreBand === 'PASS' || scoreBand === 'WARN' ? 'FAIL' : scoreBand;
+  }
+
+  return scoreBand;
 }
 
 /**

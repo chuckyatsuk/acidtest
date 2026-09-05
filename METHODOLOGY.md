@@ -1,10 +1,10 @@
 # AcidTest Security Methodology
 
-This document provides transparency about AcidTest's detection capabilities, limitations, and the security threats it addresses.
+This document covers AcidTest's detection capabilities, limitations, and the security threats it addresses.
 
 ## What AcidTest Does
 
-AcidTest performs **static analysis** on AI agent skills and MCP servers using five complementary layers:
+AcidTest performs **static analysis** on AI agent skills and MCP servers using five layers:
 
 1. **Permission Analysis** - Audits declared permissions in YAML frontmatter
 2. **Injection Detection** - Scans markdown for prompt injection patterns
@@ -91,32 +91,32 @@ whether it ever drops below 100% (a regression), not the percentage itself.
 
 ## Known Bypass Techniques
 
-While we've implemented mitigations for common bypasses, sophisticated attackers may use:
+We mitigate common bypasses, but sophisticated attackers may use others.
 
 ### Detected Bypasses
 
-✅ **String Concatenation**
+**String Concatenation**
 ```javascript
 require('child_' + 'process')  // CAUGHT by AST-based detection
 ```
 
-✅ **Template Literals**
+**Template Literals**
 ```javascript
 const mod = `child_${x}`;
 require(mod);  // CAUGHT as dynamic require
 ```
 
-✅ **Property Access**
+**Property Access**
 ```javascript
 global['child_process']  // CAUGHT by bracket notation detection
 ```
 
-✅ **Function Constructor**
+**Function Constructor**
 ```javascript
 new Function('return eval')()  // CAUGHT by AST pattern matching
 ```
 
-✅ **Invisible Unicode / Trojan Source**
+**Invisible Unicode / Trojan Source**
 ```javascript
 const safe​ = false;  // zero-width char CAUGHT (uo-001)
 // bidi override CAUGHT in code and markdown (uo-002/uo-003)
@@ -124,18 +124,18 @@ const safe​ = false;  // zero-width char CAUGHT (uo-001)
 
 ### Potentially Missed Bypasses
 
-⚠️ **Multi-Step Indirection**
+**Multi-Step Indirection**
 ```javascript
 const getModule = () => 'child_' + 'process';
 setTimeout(() => require(getModule()), 1000);  // May evade detection
 ```
 
-⚠️ **WebAssembly Execution**
+**WebAssembly Execution**
 ```javascript
 const wasm = await WebAssembly.instantiate(buffer);  // Not analyzed
 ```
 
-⚠️ **External Code Loading**
+**External Code Loading**
 ```javascript
 const remote = await fetch(url).then(r => r.text());
 eval(remote);  // eval() caught, but remote source not analyzed
@@ -145,19 +145,19 @@ eval(remote);  // eval() caught, but remote source not analyzed
 
 ### Good Use Cases
 
-✅ **Pre-Installation Screening** - Quick security check before installing skills
-✅ **CI/CD Integration** - Automated scanning in pull request workflows
-✅ **Bulk Auditing** - Scan entire directories of skills/servers
-✅ **Trust Score Comparison** - Compare security profiles of similar tools
-✅ **Education** - Learn about common attack patterns in AI agent code
+- **Pre-Installation Screening** - Quick security check before installing skills
+- **CI/CD Integration** - Automated scanning in pull request workflows
+- **Bulk Auditing** - Scan entire directories of skills/servers
+- **Trust Score Comparison** - Compare security profiles of similar tools
+- **Education** - Learn about common attack patterns in AI agent code
 
 ### Not Recommended For
 
-❌ **Production Security** - Should not be your only defense
-❌ **Compliance Certification** - Not a substitute for professional security audits
-❌ **Malware Forensics** - Not designed for analyzing known malicious code
-❌ **Dependency Vulnerabilities** - Use `npm audit` for package CVEs
-❌ **Runtime Protection** - Does not sandbox or monitor execution
+- **Production Security** - Should not be your only defense
+- **Compliance Certification** - Not a substitute for professional security audits
+- **Malware Forensics** - Not designed for analyzing known malicious code
+- **Dependency Vulnerabilities** - Use `npm audit` for package CVEs
+- **Runtime Protection** - Does not sandbox or monitor execution
 
 ## Threat Model
 
@@ -252,7 +252,7 @@ AcidTest's detection patterns are continuously updated based on:
 
 ## Python Support
 
-AcidTest provides comprehensive Python code analysis using tree-sitter-python v0.21.0:
+AcidTest analyzes Python code using tree-sitter-python v0.21.0:
 
 **Detection Capabilities:**
 - **Code Execution:** eval(), exec(), compile(), __import__()
@@ -285,7 +285,7 @@ Python support is production-ready as of v1.0.0 Phase 2.
 
 | Tool Type | AcidTest | npm audit | Sandbox/VM | Manual Review |
 |-----------|----------|-----------|------------|---------------|
-| Speed | ⚡ Fast (seconds) | Fast | Slow | Very Slow |
+| Speed | Fast (seconds) | Fast | Slow | Very Slow |
 | Coverage | Code + Config | Dependencies | Runtime | Comprehensive |
 | False Positives | Some | Few | Rare | None |
 | Setup | Zero config | Built-in | Complex | N/A |
@@ -293,16 +293,14 @@ Python support is production-ready as of v1.0.0 Phase 2.
 
 **Recommendation:** Use AcidTest as **first-line defense**, not replacement for defense-in-depth.
 
-## Transparency & Honesty
-
-We believe security tools should be honest about their limitations:
+## Limitations
 
 - **Not foolproof:** Determined attackers can bypass static analysis
 - **Not comprehensive:** Does not replace professional security audits
 - **Not certified:** Not suitable for compliance requirements
 - **Not runtime protection:** Does not prevent execution of malicious code
 
-**AcidTest is best used as a fast, automated screening tool in a layered security strategy.**
+Use AcidTest as a fast, automated screening tool within a layered security strategy.
 
 ## References & Further Reading
 

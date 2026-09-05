@@ -1,6 +1,6 @@
 # AcidTest
 
-Security scanner for AI agent skills and MCP servers.
+Security scanner for MCP servers and AI agent skills. Scan third-party code before your agent runs it.
 
 <p align="center">
   <a href="https://www.npmjs.com/package/acidtest">
@@ -17,6 +17,7 @@ Security scanner for AI agent skills and MCP servers.
 ## Scan before you install
 
 ```bash
+npx acidtest scan ./mcp-server
 npx acidtest scan ./downloaded-skill
 ```
 
@@ -25,7 +26,7 @@ No install required. No API keys. No configuration.
 ## Example: Detecting malicious code
 
 ```
-AcidTest v1.1.0
+AcidTest v2.0.0
 
 Scanning: system-helper
 Source:   test-fixtures/fixture-danger
@@ -46,19 +47,15 @@ FINDINGS
     handler.ts:12
     Uses eval() function
 
-  ✖ CRITICAL Undeclared shell execution
-    Code executes shell commands but skill does not declare
-    shell permissions
+  ✖ HIGH     maintenance-mode
+    SKILL.md:4
+    Claims the system is in maintenance mode
 
-  ✖ HIGH     env-var-secret
-    SKILL.md
-    Requests credential environment variable: AWS_SECRET
-
-  ... 16 more findings (10 CRITICAL, 6 HIGH, 2 MEDIUM, 1 LOW, 1 INFO total)
+  ... 13 more findings (9 CRITICAL, 3 HIGH, 2 MEDIUM, 1 LOW, 1 INFO total)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-RECOMMENDATION: Do not install. Undeclared data exfiltration detected.
+RECOMMENDATION: Do not install. Prompt injection attempt detected.
 ```
 
 Abridged output from `acidtest scan test-fixtures/fixture-danger` — one of the fixtures bundled in this repo, so you can reproduce it after cloning.
@@ -75,7 +72,7 @@ Abridged output from `acidtest scan test-fixtures/fixture-danger` — one of the
 - **Rug-Pull Updates** - `acidtest diff` flags a new version that adds capability the old one lacked
 - **Permission Escalation** - Undeclared filesystem/network/shell access
 
-**134 security patterns** across 19 category files, plus AST, dataflow, and version-diff analysis. Supports Python and TypeScript/JavaScript. Run `npm run validate:patterns` to regenerate the count.
+**84 security patterns** across 12 category files, plus TypeScript/JavaScript AST and version-diff analysis. Scans MCP manifests, SKILL.md, and Python/TypeScript/JavaScript source. Run `npm run validate:patterns` to regenerate the count.
 
 ## Install
 
@@ -89,9 +86,38 @@ Or run without installing:
 npx acidtest scan ./path-to-skill
 ```
 
+## For MCP server authors: lint before you publish
+
+If you write an MCP server, run `acidtest lint` on it before you publish.
+It checks your own tool and parameter descriptions for the things a
+consumer's security scanner will flag — injected-looking instructions,
+`<IMPORTANT>`-style tags, "do not tell the user" directives, covert
+parameter names, and "use this instead of the official server" phrasing —
+and points at the exact line so you can fix it or confirm it's intentional.
+
+```bash
+# Lint a manifest, a source file, or a whole server directory
+acidtest lint ./my-server
+acidtest lint ./src/tools/weather.ts
+```
+
+It reads descriptions both from a static `mcp.json` and from
+`description:` string literals in your TypeScript/JavaScript/Python source,
+because that's where real servers declare them. Output is eslint-shaped and
+it exits non-zero on error-level findings, so it drops into a pre-commit
+hook or CI.
+
+The point is precision: it stays quiet on legitimate wording. Run against
+the seven official `modelcontextprotocol/servers` reference servers, it
+reports zero findings — while still catching a poisoned description. It
+does not cry wolf on "you must provide a valid input."
+
 ## Usage
 
 ```bash
+# Lint your own MCP server before publishing
+acidtest lint ./my-server
+
 # Walk the Q4-2026 attack classes with the real scanner
 # (fixtures are generated on the fly, nothing is left on disk)
 acidtest demo
@@ -106,9 +132,6 @@ acidtest scan-all ./skills
 # Check an update for a rug-pull (new version adds capability the old lacked)
 acidtest diff ./skill-v1 ./skill-v2
 
-# Watch mode - auto re-scan on file changes
-acidtest scan ./my-skill --watch
-
 # Show remediation suggestions
 acidtest scan ./my-skill --fix
 
@@ -118,59 +141,49 @@ acidtest scan ./my-skill --json
 
 ## How it works
 
-AcidTest runs five analysis layers:
+AcidTest runs two analysis layers:
 
-1. **Permission Audit** - Analyzes declared permissions (bins, env, tools)
-2. **Prompt Injection Scan** - Detects instruction override attempts
-3. **Code Analysis** - AST parsing + pattern matching for both Python and TypeScript
-4. **Cross-Reference** - Catches code behavior not matching declared permissions
-5. **Dataflow Analysis** - Tracks taint propagation from sources (env vars, user input) to dangerous sinks (exec, fetch)
+1. **Injection scan** - checks tool and parameter descriptions, MCP manifests,
+   and markdown for instruction-override attempts, tool poisoning, covert
+   parameters, cross-server shadowing, and invisible-Unicode payloads
+2. **Code analysis** - regex patterns (dangerous imports, exfil sinks,
+   credentials, Python sinks) plus TypeScript/JavaScript AST checks for
+   `eval`, dynamic `require`, the Function constructor, and bracket-notation
+   bypasses
 
-**Example of multi-step attack detection:**
+A single CRITICAL finding — an env exfil, a poisoned tool description —
+floors the result to at least FAIL, so a real attack is never reported as
+a mere warning.
 
-```python
-# Simple pattern matching: "subprocess imported" → MEDIUM
-# Dataflow analysis: "user input → subprocess shell=True" → CRITICAL
+See [METHODOLOGY.md](./METHODOLOGY.md) for the details and limits.
 
-cmd = sys.argv[1]                           # SOURCE (user input)
-subprocess.call(f"echo {cmd}", shell=True)  # SINK (command injection)
+## Tested on real code
 
-# AcidTest detects the 2-step path and flags as CRITICAL
-```
-
-See [METHODOLOGY.md](./METHODOLOGY.md) for technical details and limitations.
-
-## Field validation
-
-AcidTest scanned **2,386 public OpenClaw skills** from the openclaw-skills repository during the February 2026 ClawHub incident. It surfaced multiple live malicious payloads, including:
+AcidTest has been run against 2,386 public agent skills from a large open skills repository. On that corpus it flagged live malicious payloads, including:
 
 - C2 callbacks to raw IPs (`91.92.242.30`)
 - SSH key injection into `~/.ssh/authorized_keys`
 - Namespace squatting attacks
 - Base64-encoded remote code execution
 
-## Daily driver
+These are the same classes of attack that now show up in MCP servers and agent skills across the ecosystem.
 
-Make AcidTest part of a working stack, not a one-off. Every command below
-exits non-zero on `FAIL`/`DANGER`, so hooks and scripts can gate on it.
+## Daily use
 
-### Scan your installed plugins and skills
+Every command below exits non-zero on `FAIL` or `DANGER`, so hooks and scripts can gate on the result.
+
+### Scan installed plugins and skills
 
 ```bash
-# Audit everything you already have installed
 acidtest scan-all ~/.claude/plugins
 acidtest scan-all ~/.claude/skills
-
-# Exits 1 if any skill is FAIL/DANGER — drop it in a cron or a shell alias
 ```
 
-### Claude Code hook: scan on install, fail loud
+This exits 1 if any skill is `FAIL` or `DANGER`, so it works in a cron job or shell alias.
 
-Block a skill or plugin before it is ever used. A Claude Code `PreToolUse`
-hook receives the tool call as **JSON on stdin** and blocks the action by
-**exiting with code 2**. This hook watches `Bash` calls that look like a
-skill/plugin install, scans the target directory, and refuses on a bad
-score.
+### Claude Code hook: scan on install
+
+Block a skill or plugin before it runs. A Claude Code `PreToolUse` hook receives the tool call as JSON on stdin and blocks the action by exiting with code 2. This hook watches `Bash` calls that look like an install, scans the target directory, and refuses if the score is bad.
 
 Install the ready-made hook:
 
@@ -230,34 +243,18 @@ Wire it into `~/.claude/settings.json`:
 }
 ```
 
-> The load-bearing parts: read the tool call from **stdin**, and **`exit 2`**
-> to block (any other exit lets the action proceed). Tune the `case`
-> matcher to however your install flow is invoked. `acidtest` and `jq` must
-> be on `PATH` for the hook process.
+Two things make this work: reading the tool call from stdin, and `exit 2` to block (any other exit lets the action proceed). Adjust the `case` matcher to match your install flow. `acidtest` and `jq` must be on `PATH`.
 
-For a postinstall-style check instead of a live hook, the same idea works
-as a plain script you run against a directory — `acidtest scan <dir>` exits
-non-zero on `FAIL`/`DANGER`, so `acidtest scan ./new-skill || echo blocked`
-is enough.
+For a postinstall check instead of a live hook, run the scan as a plain script. `acidtest scan <dir>` exits non-zero on `FAIL` or `DANGER`, so `acidtest scan ./new-skill || echo blocked` is enough.
 
-### Watch a skills directory while you work
+### Check an update before upgrading
 
 ```bash
-# Re-scan on every file change; great while developing a skill
-acidtest scan ./my-skill --watch
-
-# Keep an eye on a whole directory as you add to it
-acidtest scan ~/.claude/skills --watch
-```
-
-### Catch a rug-pull before you upgrade
-
-```bash
-# Before replacing v1 with v2, diff the two — exits 1 on a RUG_PULL verdict
+# Diff two versions; exits 1 on a RUG_PULL verdict
 acidtest diff ./skill-v1 ./skill-v2
 ```
 
-## CI/CD Integration
+## CI/CD
 
 ### GitHub Actions
 
@@ -287,13 +284,11 @@ See [`.github/workflows/acidtest-pr-comment.yml`](.github/workflows/acidtest-pr-
 ### Pre-commit Hook
 
 ```bash
-# Install pre-commit hook
 curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
-
-# Now every commit scans automatically
-git commit -m "Add feature"  # Runs AcidTest first
 ```
+
+Every commit now runs a scan first.
 
 ### Security Badge
 
@@ -303,9 +298,9 @@ git commit -m "Add feature"  # Runs AcidTest first
 
 Displays: [![Security: AcidTest](https://img.shields.io/badge/security-AcidTest-brightgreen)](https://github.com/currentlycurrently/acidtest)
 
-## Use as MCP Server
+## Run as an MCP server
 
-AcidTest can run as an MCP server, letting AI agents like Claude scan skills before installation.
+AcidTest can run as an MCP server so an agent like Claude can scan skills before installing them.
 
 Add to `claude_desktop_config.json`:
 
@@ -365,25 +360,24 @@ Starts at 100, deducts by severity:
 - **20-49**: FAIL (orange)
 - **0-19**: DANGER (red)
 
-## What we don't catch
+## What it doesn't catch
 
-- Zero-day exploits in Node.js/Python runtimes
-- Vulnerabilities in npm/pip dependencies (use `npm audit`/`pip-audit` for this)
-- Runtime behavior outside static analysis scope
+- Zero-day exploits in the Node.js or Python runtime
+- Vulnerabilities in npm/pip dependencies (use `npm audit` / `pip-audit`)
+- Runtime behavior that static analysis can't see
 - Advanced obfuscation or VM-level evasion
 
-We're honest about our limitations. See [METHODOLOGY.md](./METHODOLOGY.md) for full transparency.
+[METHODOLOGY.md](./METHODOLOGY.md) covers the limits in detail.
 
-## Defense-in-depth
+## Use it alongside other tools
 
-Use AcidTest **with** other tools:
+AcidTest is static analysis. It pairs with:
 
-- **npm audit / pip-audit** - Dependency vulnerabilities
-- **VirusTotal** - Known malware signatures
-- **Sandboxing** - Runtime isolation (Docker, VMs, Firecracker)
-- **Snapper / Clawhatch** - Complementary security tools
+- **npm audit / pip-audit** - dependency vulnerabilities
+- **VirusTotal** - known malware signatures
+- **Sandboxing** - runtime isolation (Docker, VMs, Firecracker)
 
-No single tool catches everything. Layer your defenses.
+No single tool catches everything.
 
 ## Contributing
 
