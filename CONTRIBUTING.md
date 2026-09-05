@@ -1,14 +1,14 @@
 # Contributing to AcidTest
 
-Thank you for helping make the AI agent ecosystem safer! Contributions are welcome and encouraged.
+Contributions are welcome.
 
 ## Quick Start
 
-The easiest way to contribute is by adding new detection patterns. No coding required.
+The easiest way to contribute is to add a detection pattern. No coding required.
 
 ## Adding Detection Patterns
 
-Detection patterns are JSON files in `src/patterns/`. Each pattern defines a security issue to scan for.
+Detection patterns are JSON files in `src/patterns/`. Each one defines a security issue to scan for.
 
 ### Pattern Structure
 
@@ -73,7 +73,7 @@ Add patterns to the appropriate category file:
 
 ### Example: Adding a New Pattern
 
-Let's add detection for `npm install` in code (supply chain risk):
+Add detection for `npm install` in code (a supply chain risk):
 
 1. Open `src/patterns/dangerous-imports.json`
 
@@ -142,7 +142,7 @@ npm run build
 npx acidtest scan test-fixtures/my-test
 ```
 
-You should see your pattern in the findings.
+Your pattern should appear in the findings.
 
 ## Submitting Your Contribution
 
@@ -166,7 +166,7 @@ You should see your pattern in the findings.
 
 ## Code Contributions
 
-For changes beyond patterns (new features, bug fixes, etc.):
+For changes beyond patterns, such as new features or bug fixes:
 
 ### Setup
 
@@ -245,7 +245,3 @@ npx acidtest scan-all test-fixtures
 ## License
 
 By contributing, you agree your contributions will be licensed under the same MIT License that covers the project.
-
----
-
-Thank you for helping secure the AI agent ecosystem!

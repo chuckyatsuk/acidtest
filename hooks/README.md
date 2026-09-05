@@ -67,13 +67,13 @@ ln -s ../../hooks/pre-commit .git/hooks/pre-commit
 
 ### Behavior
 
-The pre-commit hook will:
-- ✅ Run AcidTest scan on your code
-- ✅ Display score and status
-- ✅ Show CRITICAL and HIGH severity findings
-- ❌ **Block commits** on DANGER status
-- ⚠️  **Warn** on FAIL status (doesn't block by default)
-- ✅ **Pass** on WARN and PASS status
+The pre-commit hook:
+- Runs an AcidTest scan on your code
+- Displays the score and status
+- Shows CRITICAL and HIGH severity findings
+- Blocks commits on DANGER status
+- Warns on FAIL status (does not block by default)
+- Passes on WARN and PASS status
 
 ### Configuration
 

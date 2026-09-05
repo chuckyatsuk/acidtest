@@ -1,6 +1,6 @@
 # Test Fixtures
 
-Minimal SKILL.md files for CI testing and development. Each fixture is designed to trigger specific security findings and score ranges.
+Minimal SKILL.md files for CI testing and development. Each fixture triggers a known set of findings and lands in a known score range.
 
 ## Fixture Descriptions
 
@@ -17,7 +17,7 @@ A completely clean skill with no security issues:
 - No prompt injection patterns
 - Clean markdown with no hidden instructions
 
-**Use Case:** Baseline test to ensure scanner doesn't flag safe code.
+**Use case:** Baseline test that the scanner doesn't flag safe code.
 
 ---
 
@@ -37,7 +37,7 @@ A skill with minor security concerns:
 - `ex-001`: fetch-call (MEDIUM)
 - `ex-006`: http-url-literal (LOW)
 
-**Use Case:** Tests detection of common but acceptable patterns that warrant review.
+**Use case:** Tests detection of common but acceptable patterns that warrant review.
 
 ---
 
@@ -64,7 +64,7 @@ A skill with serious security issues:
 - `ex-001`: fetch-call (MEDIUM)
 - `ex-006`: http-url-literal (LOW)
 
-**Use Case:** Tests detection of multiple high-severity issues that should block installation.
+**Use case:** Tests detection of multiple high-severity issues that should block installation.
 
 ---
 
@@ -101,7 +101,7 @@ An obviously malicious skill with critical vulnerabilities:
 - `ex-005`: send-to-url (CRITICAL, multiple instances)
 - `ex-006`: http-url-literal (LOW, multiple instances)
 
-**Use Case:** Tests detection of obviously malicious code that should never be installed.
+**Use case:** Tests detection of obviously malicious code that should never be installed.
 
 ---
 
@@ -148,10 +148,10 @@ Status thresholds:
 
 ## Maintenance
 
-These fixtures are intentionally minimal to:
-- Keep test execution fast (< 2 seconds total)
-- Make expected findings obvious
-- Avoid dependency on external files
-- Work reliably in CI environments
+These fixtures are kept minimal so that they:
+- Run fast (under 2 seconds total)
+- Have obvious expected findings
+- Don't depend on external files
+- Work reliably in CI
 
-When adding new detection patterns, update fixtures if they would naturally trigger the new pattern. Keep fixture count small and focused.
+When you add a detection pattern, update a fixture if it would naturally trigger the new pattern. Keep the fixture count small and focused.
