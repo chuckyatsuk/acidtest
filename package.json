@@ -19,10 +19,7 @@
     "test:corpus": "tsx src/test-corpus/validate-corpus.ts"
   },
   "files": [
-    "dist",
-    "test-fixtures",
-    ".github",
-    "hooks"
+    "dist"
   ],
   "keywords": [
     "security",
