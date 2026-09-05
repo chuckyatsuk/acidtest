@@ -280,7 +280,7 @@ async function handleDemo(args: string[]) {
   console.log(
     "\nRun 'acidtest scan <path>' to scan your own skills and tools.",
   );
-  console.log("For more information, visit: https://acidtest.dev\n");
+  console.log("Docs and source: https://github.com/currentlycurrently/acidtest\n");
 }
 
 /**
@@ -383,7 +383,7 @@ EXAMPLES:
   # Start as MCP server (for use with Claude Desktop, etc.)
   acidtest serve
 
-For more information, visit: https://acidtest.dev
+Docs and source: https://github.com/currentlycurrently/acidtest
 `);
 }
 
