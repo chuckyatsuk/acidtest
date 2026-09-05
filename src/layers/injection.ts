@@ -27,11 +27,16 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
   const pathPatterns = await loadPatterns('sensitive-paths');
   const poisoningPatterns = await loadPatterns('mcp-tool-poisoning');
   const unicodePatterns = await loadPatterns('unicode-obfuscation');
+  const shadowingPatterns = await loadPatterns('mcp-shadowing');
 
   // Combine patterns that apply to markdown layer
-  const allPatterns = [...promptPatterns, ...pathPatterns, ...poisoningPatterns, ...unicodePatterns].filter(
-    p => p.layer === 'markdown'
-  );
+  const allPatterns = [
+    ...promptPatterns,
+    ...pathPatterns,
+    ...poisoningPatterns,
+    ...unicodePatterns,
+    ...shadowingPatterns
+  ].filter(p => p.layer === 'markdown');
 
   // Scan against each pattern
   for (const pattern of allPatterns) {
