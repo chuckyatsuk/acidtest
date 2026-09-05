@@ -26,7 +26,7 @@ No install required. No API keys. No configuration.
 ## Example: Detecting malicious code
 
 ```
-AcidTest v1.1.0
+AcidTest v2.0.0
 
 Scanning: system-helper
 Source:   test-fixtures/fixture-danger
@@ -47,19 +47,15 @@ FINDINGS
     handler.ts:12
     Uses eval() function
 
-  ✖ CRITICAL Undeclared shell execution
-    Code executes shell commands but skill does not declare
-    shell permissions
+  ✖ HIGH     maintenance-mode
+    SKILL.md:4
+    Claims the system is in maintenance mode
 
-  ✖ HIGH     env-var-secret
-    SKILL.md
-    Requests credential environment variable: AWS_SECRET
-
-  ... 16 more findings (10 CRITICAL, 6 HIGH, 2 MEDIUM, 1 LOW, 1 INFO total)
+  ... 13 more findings (9 CRITICAL, 3 HIGH, 2 MEDIUM, 1 LOW, 1 INFO total)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-RECOMMENDATION: Do not install. Undeclared data exfiltration detected.
+RECOMMENDATION: Do not install. Prompt injection attempt detected.
 ```
 
 Abridged output from `acidtest scan test-fixtures/fixture-danger` — one of the fixtures bundled in this repo, so you can reproduce it after cloning.
@@ -76,7 +72,7 @@ Abridged output from `acidtest scan test-fixtures/fixture-danger` — one of the
 - **Rug-Pull Updates** - `acidtest diff` flags a new version that adds capability the old one lacked
 - **Permission Escalation** - Undeclared filesystem/network/shell access
 
-**134 security patterns** across 19 category files, plus AST, dataflow, and version-diff analysis. Supports Python and TypeScript/JavaScript. Run `npm run validate:patterns` to regenerate the count.
+**84 security patterns** across 12 category files, plus TypeScript/JavaScript AST and version-diff analysis. Scans MCP manifests, SKILL.md, and Python/TypeScript/JavaScript source. Run `npm run validate:patterns` to regenerate the count.
 
 ## Install
 
@@ -136,9 +132,6 @@ acidtest scan-all ./skills
 # Check an update for a rug-pull (new version adds capability the old lacked)
 acidtest diff ./skill-v1 ./skill-v2
 
-# Watch mode - auto re-scan on file changes
-acidtest scan ./my-skill --watch
-
 # Show remediation suggestions
 acidtest scan ./my-skill --fix
 
@@ -148,22 +141,19 @@ acidtest scan ./my-skill --json
 
 ## How it works
 
-AcidTest runs five analysis layers:
+AcidTest runs two analysis layers:
 
-1. **Permission audit** - reads declared permissions (bins, env, tools)
-2. **Prompt injection scan** - looks for instruction-override attempts
-3. **Code analysis** - AST parsing and pattern matching for Python and TypeScript
-4. **Cross-reference** - flags code behavior that the declared permissions don't cover
-5. **Dataflow analysis** - tracks tainted data from sources (env vars, user input) to dangerous sinks (exec, fetch)
+1. **Injection scan** - checks tool and parameter descriptions, MCP manifests,
+   and markdown for instruction-override attempts, tool poisoning, covert
+   parameters, cross-server shadowing, and invisible-Unicode payloads
+2. **Code analysis** - regex patterns (dangerous imports, exfil sinks,
+   credentials, Python sinks) plus TypeScript/JavaScript AST checks for
+   `eval`, dynamic `require`, the Function constructor, and bracket-notation
+   bypasses
 
-The dataflow layer is what separates a real finding from a false alarm. A plain pattern match sees "subprocess imported" and shrugs; dataflow sees user input reaching a shell:
-
-```python
-cmd = sys.argv[1]                           # source (user input)
-subprocess.call(f"echo {cmd}", shell=True)  # sink (command injection)
-```
-
-AcidTest follows that two-step path and flags it CRITICAL.
+A single CRITICAL finding — an env exfil, a poisoned tool description —
+floors the result to at least FAIL, so a real attack is never reported as
+a mere warning.
 
 See [METHODOLOGY.md](./METHODOLOGY.md) for the details and limits.
 
@@ -256,14 +246,6 @@ Wire it into `~/.claude/settings.json`:
 Two things make this work: reading the tool call from stdin, and `exit 2` to block (any other exit lets the action proceed). Adjust the `case` matcher to match your install flow. `acidtest` and `jq` must be on `PATH`.
 
 For a postinstall check instead of a live hook, run the scan as a plain script. `acidtest scan <dir>` exits non-zero on `FAIL` or `DANGER`, so `acidtest scan ./new-skill || echo blocked` is enough.
-
-### Watch a directory while you work
-
-```bash
-# Re-scan on every file change
-acidtest scan ./my-skill --watch
-acidtest scan ~/.claude/skills --watch
-```
 
 ### Check an update before upgrading
 

@@ -18,7 +18,7 @@ import {
 import { detectMCPManifest, parseMCPManifest } from "./loaders/mcp-loader.js";
 import { loadConfig, mergeConfig } from "./config.js";
 
-const VERSION = "1.1.0";
+const VERSION = "2.0.0";
 
 /**
  * Main scan function
