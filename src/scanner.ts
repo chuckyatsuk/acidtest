@@ -186,6 +186,7 @@ async function loadAgentSkill(
     path: skillDir,
     metadata,
     markdownContent,
+    rawFrontmatter: parsed.matter,
     codeFiles,
     hasManifest: true,
   };

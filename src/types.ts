@@ -76,6 +76,7 @@ export interface Skill {
   path: string;
   metadata: SkillMetadata; // Empty object {} signals no manifest
   markdownContent?: string; // Optional - may be empty for code-only scanning
+  rawFrontmatter?: string; // Raw YAML frontmatter text from SKILL.md, for injection scanning
   codeFiles: CodeFile[];
   isMCP?: boolean; // True if this is an MCP server (not AgentSkills)
   hasManifest?: boolean; // True if SKILL.md or MCP manifest was found

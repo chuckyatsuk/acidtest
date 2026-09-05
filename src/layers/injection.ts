@@ -69,6 +69,39 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
     });
   }
 
+  // Scan raw SKILL.md frontmatter for injection attempts.
+  // Frontmatter fields (description, triggers, ...) reach the agent as
+  // metadata and are an instruction-override channel of their own.
+  const fmText = skill.rawFrontmatter || '';
+  if (fmText.trim().length > 0) {
+    const fmPatterns = await loadPatterns('frontmatter-injection');
+    const frontmatterPatterns = [...allPatterns, ...fmPatterns].filter(
+      p => p.layer === 'markdown'
+    );
+
+    for (const pattern of frontmatterPatterns) {
+      const regex = new RegExp(pattern.match.value, pattern.match.flags || '');
+      const matches = fmText.match(regex);
+
+      if (matches && matches.length > 0) {
+        const lineInFrontmatter = findLineNumber(fmText, matches[0]);
+
+        findings.push({
+          severity: pattern.severity,
+          category: pattern.category || 'frontmatter-injection',
+          title: pattern.name,
+          file: 'SKILL.md (frontmatter)',
+          // Raw frontmatter starts on line 2, after the opening --- delimiter
+          line: lineInFrontmatter !== undefined ? lineInFrontmatter + 1 : undefined,
+          detail: pattern.description || `Pattern match: ${pattern.name}`,
+          evidence: matches.length > 1 ? `${matches.length} matches found` : `Match: "${truncate(matches[0], 100)}"`,
+          patternId: pattern.id,
+          ...(pattern.remediation && { remediation: pattern.remediation })
+        });
+      }
+    }
+  }
+
   // Check for base64-looking strings in markdown (potential obfuscation)
   const base64Pattern = /[A-Za-z0-9+\/]{50,}={0,2}/g;
   const base64Matches = markdown.match(base64Pattern);
