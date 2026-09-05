@@ -42,6 +42,8 @@ async function main() {
     await handleScanAll(args.slice(1));
   } else if (command === "diff") {
     await handleDiff(args.slice(1));
+  } else if (command === "lint") {
+    await handleLint(args.slice(1));
   } else if (command === "demo") {
     await handleDemo(args.slice(1));
   } else if (command === "serve") {
@@ -262,6 +264,77 @@ async function handleDiff(args: string[]) {
   } catch (error) {
     console.error("Error diffing versions:", (error as Error).message);
     process.exit(1);
+  }
+}
+
+/**
+ * Handle 'lint' command
+ * Author-side linter: checks the author's OWN manifest/skill for injected-
+ * looking text, covert parameters, and shadowing claims before publishing.
+ */
+async function handleLint(args: string[]) {
+  const jsonOutput = args.includes("--json");
+  const quiet = args.includes("--quiet"); // errors only, suppress warnings
+  const paths = args.filter((a) => !a.startsWith("--"));
+
+  if (paths.length === 0) {
+    console.error("Error: no path provided");
+    console.error("Usage: acidtest lint <mcp.json|SKILL.md|dir> [--json] [--quiet]");
+    process.exit(2);
+  }
+
+  const { lint } = await import("./lint.js");
+
+  try {
+    const result = await lint(paths[0]);
+
+    if (jsonOutput) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      const chalk = (await import("chalk")).default;
+      const shown = quiet
+        ? result.findings.filter(
+            (f) => f.severity === "CRITICAL" || f.severity === "HIGH",
+          )
+        : result.findings;
+
+      if (shown.length === 0) {
+        console.log(chalk.green("✓ clean — no injected-looking text in your descriptions"));
+      } else {
+        let currentFile = "";
+        for (const f of shown) {
+          if (f.file !== currentFile) {
+            currentFile = f.file;
+            console.log("\n" + chalk.underline(f.file));
+          }
+          const sev =
+            f.severity === "CRITICAL" || f.severity === "HIGH"
+              ? chalk.red(f.severity.toLowerCase())
+              : chalk.yellow(f.severity.toLowerCase());
+          const loc = chalk.dim(`${f.line}:${f.column}`);
+          console.log(`  ${loc}  ${sev}  ${f.message}  ${chalk.dim(f.ruleId)}`);
+          console.log(`         ${chalk.dim(f.excerpt)}`);
+        }
+        console.log(
+          "\n" +
+            chalk.bold(
+              `${result.errorCount} error(s), ${result.warningCount} warning(s)`,
+            ),
+        );
+        console.log(
+          chalk.dim(
+            "If a flag is a false alarm on legitimate wording, rephrase it or\n" +
+              "confirm it's intentional — this is what a consumer's scanner will see.",
+          ),
+        );
+      }
+    }
+
+    // Exit non-zero if any error-level finding, so CI / pre-commit gates.
+    if (result.errorCount > 0) process.exit(1);
+  } catch (error) {
+    console.error("Error:", (error as Error).message);
+    process.exit(2);
   }
 }
 
