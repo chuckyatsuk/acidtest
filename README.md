@@ -1,6 +1,6 @@
 # AcidTest
 
-Security scanner for AI agent skills and MCP servers.
+Security scanner for MCP servers and AI agent skills. Scan third-party code before your agent runs it.
 
 <p align="center">
   <a href="https://www.npmjs.com/package/acidtest">
@@ -17,6 +17,7 @@ Security scanner for AI agent skills and MCP servers.
 ## Scan before you install
 
 ```bash
+npx acidtest scan ./mcp-server
 npx acidtest scan ./downloaded-skill
 ```
 
@@ -140,14 +141,16 @@ subprocess.call(f"echo {cmd}", shell=True)  # SINK (command injection)
 
 See [METHODOLOGY.md](./METHODOLOGY.md) for technical details and limitations.
 
-## Field validation
+## Tested on real code
 
-AcidTest scanned **2,386 public OpenClaw skills** from the openclaw-skills repository during the February 2026 ClawHub incident. It surfaced multiple live malicious payloads, including:
+AcidTest has been run against 2,386 public agent skills from a large open skills repository. On that corpus it flagged live malicious payloads, including:
 
 - C2 callbacks to raw IPs (`91.92.242.30`)
 - SSH key injection into `~/.ssh/authorized_keys`
 - Namespace squatting attacks
 - Base64-encoded remote code execution
+
+These are the same classes of attack that now show up in MCP servers and agent skills across the ecosystem.
 
 ## Daily driver
 
