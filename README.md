@@ -92,7 +92,8 @@ npx acidtest scan ./path-to-skill
 ## Usage
 
 ```bash
-# See demo with example malicious skills
+# Walk the Q4-2026 attack classes with the real scanner
+# (fixtures are generated on the fly, nothing is left on disk)
 acidtest demo
 
 # Scan a skill or MCP server
@@ -101,6 +102,9 @@ acidtest scan ./my-mcp-server
 
 # Scan all skills in a directory
 acidtest scan-all ./skills
+
+# Check an update for a rug-pull (new version adds capability the old lacked)
+acidtest diff ./skill-v1 ./skill-v2
 
 # Watch mode - auto re-scan on file changes
 acidtest scan ./my-skill --watch
