@@ -25,7 +25,7 @@ No install required. No API keys. No configuration.
 ## Example: Detecting malicious code
 
 ```
-AcidTest v1.0.1
+AcidTest v1.1.0
 
 Scanning: system-helper
 Source:   test-fixtures/fixture-danger

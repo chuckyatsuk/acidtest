@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-05
+
+**2026 threat-model update.** Detection coverage for the agent-security
+attack classes that emerged after the February 2026 pattern freeze, plus
+repository hygiene. Fully backward compatible — no existing CLI flag or
+scan-target behavior changed; one additive command (`acidtest diff`).
+
+### Added
+
+- **30 new detection patterns across 6 new categories**, each with a
+  corpus fixture and tests:
+  - **MCP tool poisoning** (tp-001..006): instructions smuggled into tool
+    and parameter descriptions, concealment directives, covert-channel
+    parameter names.
+  - **Cross-server shadowing / confused deputy** (cs-001..004): servers
+    claiming to replace, intercept, or impersonate other tools.
+  - **Credential exfil via MCP channels** (me-001..005): bulk environment
+    harvesting and leaks through MCP resource/sampling channels.
+  - **SKILL.md frontmatter injection** (fm-001..003): instruction-override
+    attempts in description/trigger fields, executable frontmatter fields.
+  - **Unicode/invisible-character obfuscation** (uo-001..006): zero-width
+    characters, bidi/Trojan-Source overrides, U+E0000 tag characters,
+    mixed-script homoglyphs.
+  - **2026 prompt-injection vocabulary** (pi-011..016): fake
+    system-reminder blocks, fake tool-call/result transcript blocks,
+    embedded tool-call JSON, direct address to the reviewing AI, AI-audience
+    callouts, claimed vendor provenance.
+- **`acidtest diff <old> <new>`** — rug-pull update detection. Flags a new
+  version that adds network/exec/credential capability absent from the old
+  version; exits non-zero on a `RUG_PULL` verdict for CI gating.
+- **Restructured `acidtest demo`** around the Q4-2026 attack classes
+  (tool-poisoned MCP server, credential-exfil skill, invisible-Unicode
+  payload, rug-pull pair), generated on demand and scanned with the real
+  scanner — no fixtures shipped in the package.
+- **Test corpus** (`test-corpus/`) committed and wired into
+  `npm run test:corpus`, with a README documenting how the numbers are
+  regenerated.
+- **Real CI** (`.github/workflows/test.yml`): vitest + pattern validation
+  on Node 20/22/24, making the README build badge reflect reality.
+- **Daily-driver recipes** in the README: Claude Code PreToolUse install
+  hook (`hooks/claude-code-preinstall.sh`), `scan-all ~/.claude/plugins`,
+  watch-mode, and version-diff.
+
+### Changed
+
+- Injection findings on MCP servers are now labeled `MCP manifest` instead
+  of `SKILL.md`.
+- SKILL.md frontmatter is now scanned for injection (previously parsed only
+  for permissions).
+- Dependencies updated for a clean install: `glob` 13, `chalk` 6, plus
+  dev-dependency bumps. Fresh `npm install` prints zero deprecation
+  warnings and `npm audit` reports zero vulnerabilities.
+- npm tarball trimmed to `dist` only — no longer ships `.github` or
+  malicious-pattern test fixtures into consumers' `node_modules`.
+- README refreshed: example output regenerated from a real scan, ClawHub
+  section reframed as a timeless field-validation note, dead `acidtest.dev`
+  links replaced with the live site and repo.
+
+### Fixed
+
+- Import patterns (di-001/004/005/006) now match ESM named imports
+  (`import { execSync } from 'child_process'`), not only `require()` and
+  dynamic `import()`.
+- `npm run test:corpus` no longer fails with "No corpus files found" — the
+  corpus directory it expects now exists and is committed.
+
+### Quality
+
+- ✅ 176 tests passing (was 115)
+- ✅ 134 patterns validated across 19 category files
+- ✅ Corpus: 12/12 vulnerable detected, 6/6 legitimate clean
+
+### Removed
+
+- Unregenerable claims: the fixed "~90-95% detection rate" is replaced with
+  the corpus-backed result, and the stars/downloads README badges were
+  dropped.
+
 ## [1.0.0] - 2026-02-08
 
 **Production Release** - First stable release of AcidTest
