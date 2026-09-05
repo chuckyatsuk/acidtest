@@ -13,7 +13,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 /**
  * Main CLI function
@@ -217,7 +217,7 @@ async function handleScanAll(args: string[]) {
  * Handle 'demo' command
  * Runs built-in test fixtures to show the full output spectrum
  */
-async function handleDemo(args: string[]) {
+async function handleDemo(_args: string[]) {
   console.log("AcidTest Demo - Running built-in test fixtures...\n");
 
   // Find fixtures directory relative to this file
@@ -262,16 +262,7 @@ async function handleDemo(args: string[]) {
     "AcidTest provides four security levels based on trust score (0-100):\n",
   );
 
-  for (const { fixture, result } of results) {
-    const statusColor =
-      result.status === "PASS"
-        ? "green"
-        : result.status === "WARN"
-          ? "yellow"
-          : result.status === "FAIL"
-            ? "red"
-            : "red";
-
+  for (const { result } of results) {
     console.log(
       `  ${result.status.padEnd(6)} (${result.score}/100) - ${getStatusDescription(result.status)}`,
     );
@@ -305,7 +296,7 @@ function getStatusDescription(status: string): string {
  * Handle 'serve' command
  * Starts AcidTest as an MCP server
  */
-async function handleServe(args: string[]) {
+async function handleServe(_args: string[]) {
   // Find the mcp-server.js file relative to this file
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);

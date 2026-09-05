@@ -7,7 +7,7 @@ import { readFileSync, existsSync, statSync } from "fs";
 import { join, basename, extname, dirname } from "path";
 import { glob } from "glob";
 import matter from "gray-matter";
-import type { Skill, CodeFile, ScanResult, Finding } from "./types.js";
+import type { Skill, CodeFile, ScanResult, Finding, SkillMetadata } from "./types.js";
 import { scanPermissions } from "./layers/permissions.js";
 import { scanInjection } from "./layers/injection.js";
 import { scanCode } from "./layers/code.js";
@@ -21,7 +21,7 @@ import {
 import { detectMCPManifest, parseMCPManifest } from "./loaders/mcp-loader.js";
 import { loadConfig, mergeConfig } from "./config.js";
 
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 /**
  * Main scan function
@@ -36,12 +36,13 @@ export async function scanSkill(skillPath: string, showProgress: boolean = false
     spinner = ora('Loading skill...').start();
   }
 
-  // Load the skill
-  const skill = await loadSkill(skillPath);
-
   // Load configuration
-  const userConfig = loadConfig(skillPath);
+  const scanDirectory = resolveScanDirectory(skillPath);
+  const userConfig = loadConfig(scanDirectory);
   const config = mergeConfig(userConfig);
+
+  // Load the skill
+  const skill = await loadSkill(skillPath, config.ignore?.files ?? []);
 
   // Run all five scanning layers
   if (spinner) spinner.text = 'Layer 1: Checking permissions...';
@@ -127,7 +128,7 @@ export async function scanSkill(skillPath: string, showProgress: boolean = false
  * Also supports MCP server manifests (mcp.json, server.json, package.json)
  * If no manifest found, creates minimal Skill object for code-only scanning
  */
-async function loadSkill(skillPath: string): Promise<Skill> {
+async function loadSkill(skillPath: string, ignoreFileGlobs: string[] = []): Promise<Skill> {
   let skillDir: string;
 
   // Determine if path is a directory or file
@@ -147,17 +148,17 @@ async function loadSkill(skillPath: string): Promise<Skill> {
   // Try to load as SKILL.md first (AgentSkills format)
   const skillMdPath = join(skillDir, "SKILL.md");
   if (existsSync(skillMdPath)) {
-    return await loadAgentSkill(skillDir, skillMdPath);
+    return await loadAgentSkill(skillDir, skillMdPath, ignoreFileGlobs);
   }
 
   // Try to detect MCP manifest
   const mcpManifestPath = detectMCPManifest(skillDir);
   if (mcpManifestPath) {
-    return await loadMCPServer(skillDir, mcpManifestPath);
+    return await loadMCPServer(skillDir, mcpManifestPath, ignoreFileGlobs);
   }
 
   // No manifest found - create minimal Skill object for code-only scanning
-  return await loadGenericCode(skillDir);
+  return await loadGenericCode(skillDir, ignoreFileGlobs);
 }
 
 /**
@@ -166,6 +167,7 @@ async function loadSkill(skillPath: string): Promise<Skill> {
 async function loadAgentSkill(
   skillDir: string,
   skillMdPath: string,
+  ignoreFileGlobs: string[],
 ): Promise<Skill> {
   // Read and parse SKILL.md
   const skillContent = readFileSync(skillMdPath, "utf-8");
@@ -179,7 +181,7 @@ async function loadAgentSkill(
   const skillName = metadata.name || basename(skillDir) || "unknown-skill";
 
   // Find all code files (.ts, .js, .mjs, .cjs)
-  const codeFiles = await findCodeFiles(skillDir);
+  const codeFiles = await findCodeFiles(skillDir, ignoreFileGlobs);
 
   return {
     name: skillName,
@@ -197,6 +199,7 @@ async function loadAgentSkill(
 async function loadMCPServer(
   skillDir: string,
   manifestPath: string,
+  ignoreFileGlobs: string[],
 ): Promise<Skill> {
   const manifest = parseMCPManifest(manifestPath);
 
@@ -208,7 +211,7 @@ async function loadMCPServer(
     manifest.metadata.name || basename(skillDir) || "unknown-mcp-server";
 
   // Find all code files
-  const codeFiles = await findCodeFiles(skillDir);
+  const codeFiles = await findCodeFiles(skillDir, ignoreFileGlobs);
 
   return {
     name: serverName,
@@ -225,12 +228,12 @@ async function loadMCPServer(
  * Load generic code directory without manifest
  * Creates minimal Skill object to enable code-only scanning
  */
-async function loadGenericCode(skillDir: string): Promise<Skill> {
+async function loadGenericCode(skillDir: string, ignoreFileGlobs: string[]): Promise<Skill> {
   // Use directory name as skill name
   const skillName = basename(skillDir) || "unknown-code";
 
   // Find all code files
-  const codeFiles = await findCodeFiles(skillDir);
+  const codeFiles = await findCodeFiles(skillDir, ignoreFileGlobs);
 
   // Check for README.md to use as markdown content (optional)
   let markdownContent = "";
@@ -257,7 +260,7 @@ async function loadGenericCode(skillDir: string): Promise<Skill> {
 /**
  * Normalize permissions to always have consistent structure
  */
-function normalizePermissions(metadata: any): {
+function normalizePermissions(metadata: SkillMetadata): {
   bins: string[];
   env: string[];
   tools: string[];
@@ -288,7 +291,7 @@ function normalizePermissions(metadata: any): {
 /**
  * Find all code files in skill directory
  */
-async function findCodeFiles(skillDir: string): Promise<CodeFile[]> {
+async function findCodeFiles(skillDir: string, ignoreFileGlobs: string[] = []): Promise<CodeFile[]> {
   const codeFiles: CodeFile[] = [];
 
   // Search for .ts, .js, .mjs, .cjs, .py files
@@ -303,6 +306,7 @@ async function findCodeFiles(skillDir: string): Promise<CodeFile[]> {
   for (const pattern of patterns) {
     try {
       const files = await glob(pattern, {
+        follow: false, // Don't follow symlinks outside the skill directory
         ignore: [
           "**/node_modules/**",
           "**/dist/**",
@@ -324,6 +328,7 @@ async function findCodeFiles(skillDir: string): Promise<CodeFile[]> {
           "**/*.min.js",
           "**/*.min.mjs",
           "**/vendor/**",
+          ...ignoreFileGlobs,
         ],
       });
 
@@ -361,11 +366,24 @@ async function findCodeFiles(skillDir: string): Promise<CodeFile[]> {
         }
       }
     } catch (error) {
-      // Skip pattern if glob fails
+      // Log glob failures in debug mode but don't abort the scan
+      if (process.env.ACIDTEST_DEBUG) {
+        console.warn(`Warning: glob pattern failed: ${pattern}: ${(error as Error).message}`);
+      }
     }
   }
 
   return codeFiles;
+}
+
+/**
+ * Resolve skill directory from either directory or file path
+ */
+function resolveScanDirectory(skillPath: string): string {
+  if (existsSync(skillPath) && statSync(skillPath).isDirectory()) {
+    return skillPath;
+  }
+  return dirname(skillPath);
 }
 
 /**

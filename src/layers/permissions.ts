@@ -3,7 +3,7 @@
  * Analyzes YAML frontmatter to identify requested permissions and assess risk
  */
 
-import type { Skill, Finding, LayerResult, Pattern } from '../types.js';
+import type { Skill, Finding, LayerResult } from '../types.js';
 import { loadPatterns } from '../pattern-loader.js';
 
 /**

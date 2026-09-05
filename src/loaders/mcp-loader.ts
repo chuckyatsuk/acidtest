@@ -200,7 +200,7 @@ function extractFromClaudeConfig(config: any): SkillMetadata {
     const allBins: string[] = [];
 
     // Combine all servers
-    for (const [serverName, serverConfig] of Object.entries(
+    for (const [_serverName, serverConfig] of Object.entries(
       config.mcpServers,
     )) {
       const server = serverConfig as any;

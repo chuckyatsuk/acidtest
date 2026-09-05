@@ -236,7 +236,7 @@ class DataFlowGraphBuilder {
    * Note: We don't create the object node here, as it's created in getOrCreateNodeForExpression
    * This method just ensures we visit the properties
    */
-  private visitObjectLiteral(node: ts.ObjectLiteralExpression): void {
+  private visitObjectLiteral(_node: ts.ObjectLiteralExpression): void {
     // Properties will be visited through recursive forEachChild
   }
 

@@ -304,8 +304,6 @@ async function main() {
     // Separate Python and TypeScript issues
     const pythonFalseNegatives = falseNegatives.filter(r => r.file.language === "python");
     const tsFalseNegatives = falseNegatives.filter(r => r.file.language === "typescript");
-    const tsFalsePositives = falsePositives.filter(r => r.file.language === "typescript");
-    const pyFalsePositives = falsePositives.filter(r => r.file.language === "python");
 
     if (falseNegatives.length > 0 || falsePositives.length > 0) {
       console.log("⚠️  Issues Found:\n");

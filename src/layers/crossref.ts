@@ -3,7 +3,7 @@
  * Compares findings across layers to detect permission mismatches and deception
  */
 
-import type { Skill, Finding, LayerResult } from '../types.js';
+import type { Skill, Finding, LayerResult, CodeFile } from '../types.js';
 
 /**
  * Cross-reference findings from previous layers
@@ -195,7 +195,7 @@ export async function scanCrossReference(
 /**
  * Extract environment variable names accessed in code
  */
-function extractEnvVarsFromCode(codeFiles: any[]): string[] {
+function extractEnvVarsFromCode(codeFiles: CodeFile[]): string[] {
   const envVars = new Set<string>();
   const envPattern = /process\.env\.([A-Z_][A-Z0-9_]*)/g;
 

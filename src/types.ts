@@ -6,7 +6,7 @@ export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 
 export type Status = 'PASS' | 'WARN' | 'FAIL' | 'DANGER' | 'ERROR';
 
-export type Layer = 'permissions' | 'markdown' | 'code' | 'crossref';
+export type Layer = 'permissions' | 'markdown' | 'code' | 'crossref' | 'dataflow';
 
 export type PatternMatchType = 'regex' | 'ast' | 'exact';
 

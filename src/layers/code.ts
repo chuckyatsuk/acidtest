@@ -6,7 +6,6 @@
 import ts from 'typescript';
 import type { Skill, Finding, LayerResult, CodeFile } from '../types.js';
 import { loadPatterns } from '../pattern-loader.js';
-import { TypeScriptParser } from '../parsers/typescript-parser.js';
 import { PythonParser } from '../parsers/python-parser.js';
 
 /**
@@ -524,7 +523,7 @@ function findLineNumber(text: string, match: string): number | undefined {
 /**
  * Analyze Python AST for security issues
  */
-function analyzePythonAST(tree: any, content: string, filePath: string): Finding[] {
+function analyzePythonAST(tree: any, _content: string, filePath: string): Finding[] {
   const findings: Finding[] = [];
   const rootNode = tree.rootNode;
 

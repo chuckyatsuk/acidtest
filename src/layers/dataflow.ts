@@ -21,7 +21,7 @@ import {
   extractTaintSources,
   extractTaintSinks,
 } from '../analysis/taint-propagation.js';
-import { DataFlowPath } from '../analysis/dataflow-types.js';
+import { DataFlowPath, DataFlowNode, TaintSource, TaintSink } from '../analysis/dataflow-types.js';
 
 export interface DataflowScanResult {
   findings: Finding[];
@@ -31,6 +31,7 @@ export interface DataflowScanResult {
     sourcesFound: number;
     sinksFound: number;
     pathsDetected: number;
+    filesSkipped: number;
   };
 }
 
@@ -44,6 +45,7 @@ export async function scanDataflow(skill: Skill): Promise<DataflowScanResult> {
   let totalSources = 0;
   let totalSinks = 0;
   let totalPaths = 0;
+  let filesSkipped = 0;
 
   // Only analyze TypeScript/JavaScript files
   const filesToAnalyze = skill.codeFiles.filter((file) => {
@@ -69,6 +71,21 @@ export async function scanDataflow(skill: Skill): Promise<DataflowScanResult> {
         ts.ScriptTarget.Latest,
         true
       );
+
+      // Surface parser diagnostics instead of silently skipping malformed files
+      if (sourceFile.parseDiagnostics.length > 0) {
+        filesSkipped++;
+        findings.push({
+          severity: 'INFO',
+          category: 'analysis-diagnostics',
+          title: 'Dataflow skipped file with parse errors',
+          file: filePath,
+          detail: 'Dataflow analysis skipped this file because TypeScript parsing reported syntax errors.',
+          evidence: `Parse diagnostics: ${sourceFile.parseDiagnostics.length}`,
+          patternId: 'diag-dataflow-parse-skipped',
+        });
+        continue;
+      }
 
       // Build dataflow graph
       const graph = buildDataFlowGraph(sourceFile);
@@ -98,9 +115,16 @@ export async function scanDataflow(skill: Skill): Promise<DataflowScanResult> {
         findings.push(createDataflowFinding(filePath, path));
       }
     } catch (error) {
-      // Silently skip files that can't be parsed
-      // (e.g., syntax errors, not valid TypeScript)
-      continue;
+      filesSkipped++;
+      findings.push({
+        severity: 'INFO',
+        category: 'analysis-diagnostics',
+        title: 'Dataflow skipped file due to analyzer error',
+        file: filePath,
+        detail: 'Dataflow analysis could not analyze this file due to an internal error.',
+        evidence: (error as Error).message || 'Unknown dataflow analyzer error',
+        patternId: 'diag-dataflow-analyzer-skipped',
+      });
     }
   }
 
@@ -112,6 +136,7 @@ export async function scanDataflow(skill: Skill): Promise<DataflowScanResult> {
       sourcesFound: totalSources,
       sinksFound: totalSinks,
       pathsDetected: totalPaths,
+      filesSkipped,
     },
   };
 }
@@ -147,9 +172,9 @@ function createDataflowFinding(filePath: string, path: DataFlowPath): Finding {
  * Build evidence string showing the dataflow path
  */
 function buildEvidenceString(
-  source: any,
-  sink: any,
-  path: any[]
+  source: TaintSource,
+  sink: TaintSink,
+  path: DataFlowNode[]
 ): string {
   const sourceDesc = `${source.identifier} (line ${source.line})`;
   const sinkDesc = `${sink.function}() (line ${sink.line})`;
@@ -174,8 +199,8 @@ function buildEvidenceString(
  * Build detailed message explaining the issue
  */
 function buildDetailMessage(
-  source: any,
-  sink: any,
+  source: TaintSource,
+  sink: TaintSink,
   confidence: string
 ): string {
   const sourceTypeDesc = getSourceTypeDescription(source.type);

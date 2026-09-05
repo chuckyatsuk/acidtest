@@ -54,7 +54,10 @@ export async function watchMode(skillPath: string, options: WatchOptions = {}): 
         console.log('Watching for changes... (press q to quit, r to re-scan, c to clear)');
       }
     } catch (error) {
-      console.error('Error during scan:', (error as Error).message);
+      const msg = (error as Error).message ?? String(error);
+      console.error(`\n[ERROR] Scan failed: ${msg}`);
+      console.error('─'.repeat(30));
+      console.error('Watching for changes... (press r to retry, q to quit)');
     } finally {
       scanning = false;
     }
@@ -108,7 +111,12 @@ export async function watchMode(skillPath: string, options: WatchOptions = {}): 
 
   // Set up keyboard shortcuts (only in non-JSON mode)
   if (!options.jsonOutput && process.stdin.isTTY) {
-    process.stdin.setRawMode(true);
+    try {
+      process.stdin.setRawMode(true);
+    } catch {
+      // setRawMode may fail in some environments (CI, non-interactive shells)
+      // Fall back gracefully without keyboard shortcuts
+    }
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
 
@@ -119,7 +127,7 @@ export async function watchMode(skillPath: string, options: WatchOptions = {}): 
       if (char === 'q' || char === '\u0003') {
         console.log('\nExiting watch mode...');
         watcher.close();
-        process.stdin.setRawMode(false);
+        try { process.stdin.setRawMode(false); } catch { /* ignore */ }
         process.exit(0);
       }
 
@@ -140,7 +148,7 @@ export async function watchMode(skillPath: string, options: WatchOptions = {}): 
     console.log('\nExiting watch mode...');
     watcher.close();
     if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
+      try { process.stdin.setRawMode(false); } catch { /* ignore */ }
     }
     process.exit(0);
   });
@@ -148,7 +156,7 @@ export async function watchMode(skillPath: string, options: WatchOptions = {}): 
   process.on('SIGTERM', () => {
     watcher.close();
     if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
+      try { process.stdin.setRawMode(false); } catch { /* ignore */ }
     }
     process.exit(0);
   });

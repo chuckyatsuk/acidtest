@@ -13,7 +13,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { scanSkill, scanAllSkills } from "./scanner.js";
 
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 /**
  * Create and configure the MCP server

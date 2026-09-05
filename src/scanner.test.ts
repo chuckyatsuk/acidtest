@@ -7,6 +7,7 @@ import { scanSkill } from "./scanner.js";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -145,5 +146,95 @@ describe("scanSkill", () => {
     expect(result.permissions.bins).toEqual([]);
     expect(result.permissions.env).toEqual([]);
     expect(result.permissions.tools).toEqual([]);
+  });
+
+  it("should apply ignore.files patterns from .acidtest.json", async () => {
+    const tempDir = join(fixturesDir, "temp-ignore-files");
+    rmSync(tempDir, { recursive: true, force: true });
+    mkdirSync(tempDir, { recursive: true });
+
+    try {
+      writeFileSync(
+        join(tempDir, "SKILL.md"),
+        `---
+name: temp-ignore-files
+description: test fixture
+---
+
+# Temp fixture
+`
+      );
+
+      writeFileSync(
+        join(tempDir, ".acidtest.json"),
+        JSON.stringify(
+          {
+            ignore: {
+              files: ["**/ignored.ts"],
+            },
+          },
+          null,
+          2
+        )
+      );
+
+      writeFileSync(
+        join(tempDir, "ignored.ts"),
+        `export function run() {
+  eval("console.log('should be ignored')");
+}
+`
+      );
+
+      writeFileSync(
+        join(tempDir, "safe.ts"),
+        `export function ok() {
+  return "ok";
+}
+`
+      );
+
+      const result = await scanSkill(tempDir);
+      const ignoredFileFindings = result.findings.filter((f) =>
+        (f.file || "").includes("ignored.ts")
+      );
+
+      expect(ignoredFileFindings.length).toBe(0);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("should surface dataflow parse-skip diagnostics", async () => {
+    const tempDir = join(fixturesDir, "temp-dataflow-diagnostics");
+    rmSync(tempDir, { recursive: true, force: true });
+    mkdirSync(tempDir, { recursive: true });
+
+    try {
+      writeFileSync(
+        join(tempDir, "SKILL.md"),
+        `---
+name: temp-dataflow-diagnostics
+description: test fixture
+---
+
+# Temp fixture
+`
+      );
+
+      writeFileSync(
+        join(tempDir, "broken.ts"),
+        `export const broken = ;`
+      );
+
+      const result = await scanSkill(tempDir);
+      const diagnosticsFindings = result.findings.filter(
+        (f) => f.category === "analysis-diagnostics" && (f.file || "").includes("broken.ts")
+      );
+
+      expect(diagnosticsFindings.length).toBeGreaterThan(0);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
