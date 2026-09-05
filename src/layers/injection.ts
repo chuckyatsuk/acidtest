@@ -12,6 +12,7 @@ import { loadPatterns } from '../pattern-loader.js';
 export async function scanInjection(skill: Skill): Promise<LayerResult> {
   const findings: Finding[] = [];
   const markdown = skill.markdownContent || '';
+  const sourceLabel = skill.isMCP ? 'MCP manifest' : 'SKILL.md';
 
   // Skip markdown scanning if no markdown content
   if (!markdown || markdown.length === 0) {
@@ -21,12 +22,13 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
     };
   }
 
-  // Load prompt injection and sensitive path patterns
+  // Load prompt injection, sensitive path, and tool-poisoning patterns
   const promptPatterns = await loadPatterns('prompt-injection');
   const pathPatterns = await loadPatterns('sensitive-paths');
+  const poisoningPatterns = await loadPatterns('mcp-tool-poisoning');
 
   // Combine patterns that apply to markdown layer
-  const allPatterns = [...promptPatterns, ...pathPatterns].filter(
+  const allPatterns = [...promptPatterns, ...pathPatterns, ...poisoningPatterns].filter(
     p => p.layer === 'markdown'
   );
 
@@ -43,7 +45,7 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
         severity: pattern.severity,
         category: pattern.category || 'prompt-injection',
         title: pattern.name,
-        file: 'SKILL.md',
+        file: sourceLabel,
         line: lineNumber,
         detail: pattern.description || `Pattern match: ${pattern.name}`,
         evidence: matches.length > 1 ? `${matches.length} matches found` : `Match: "${truncate(matches[0], 100)}"`,
@@ -61,7 +63,7 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
       severity: 'LOW',
       category: 'suspicious-size',
       title: 'Unusually large skill documentation',
-      file: 'SKILL.md',
+      file: sourceLabel,
       detail: `Skill documentation is ${markdown.length} characters`,
       evidence: 'Large files can hide malicious content'
     });
@@ -75,7 +77,7 @@ export async function scanInjection(skill: Skill): Promise<LayerResult> {
       severity: 'MEDIUM',
       category: 'obfuscation',
       title: 'Possible base64-encoded content in markdown',
-      file: 'SKILL.md',
+      file: sourceLabel,
       detail: `Found ${base64Matches.length} base64-looking string(s)`,
       evidence: 'Base64 encoding can hide malicious instructions'
     });
