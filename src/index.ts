@@ -267,90 +267,67 @@ async function handleDiff(args: string[]) {
 
 /**
  * Handle 'demo' command
- * Runs built-in test fixtures to show the full output spectrum
+ * Generates the Q4-2026 attack-class demo pack on demand and walks it
+ * with the real scanner. Fixtures are never shipped in the tarball.
  */
 async function handleDemo(args: string[]) {
-  console.log("AcidTest Demo - Running built-in test fixtures...\n");
+  const { demoCases, materializeDemoPack } = await import("./demo-pack.js");
+  const { diffVersions } = await import("./diff.js");
 
-  // Find fixtures directory relative to this file
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const fixturesDir = join(__dirname, "..", "test-fixtures");
+  console.log("AcidTest Demo — Q4 2026 attack classes\n");
+  console.log(
+    "Fixtures are generated on demand into a temp directory and scanned\n" +
+      "with the real scanner, then removed. Nothing is left on disk.\n",
+  );
 
-  const fixtures = [
-    { name: "PASS", path: join(fixturesDir, "fixture-pass") },
-    { name: "WARN", path: join(fixturesDir, "fixture-warn") },
-    { name: "FAIL", path: join(fixturesDir, "fixture-fail") },
-    { name: "DANGER", path: join(fixturesDir, "fixture-danger") },
-  ];
+  const { paths, cleanup } = materializeDemoPack();
+  const summary: Array<{ title: string; verdict: string }> = [];
 
-  const results = [];
+  try {
+    const cases = demoCases();
+    for (let i = 0; i < cases.length; i++) {
+      const demoCase = cases[i];
+      console.log("\n" + "─".repeat(60) + "\n");
+      console.log(`[${demoCase.title}]`);
+      console.log(demoCase.about + "\n");
 
-  for (let i = 0; i < fixtures.length; i++) {
-    const fixture = fixtures[i];
-
-    try {
-      const result = await scanSkill(fixture.path);
-      results.push({ fixture: fixture.name, result });
-
-      console.log(`[${ fixture.name } Example]`);
-      reportToTerminal(result);
-
-      if (i < fixtures.length - 1) {
-        console.log("\n" + "─".repeat(60) + "\n");
+      if (demoCase.id === "rug-pull") {
+        // Two-version case: diff v1 against v2.
+        const diff = await diffVersions(
+          join(paths[demoCase.id], "v1"),
+          join(paths[demoCase.id], "v2"),
+        );
+        console.log(
+          `  v1 score ${diff.oldScore}/100  →  v2 score ${diff.newScore}/100`,
+        );
+        console.log(`  VERDICT: ${diff.verdict}\n`);
+        for (const finding of diff.findings) {
+          console.log(`    [${finding.severity}] ${finding.title}`);
+        }
+        summary.push({ title: demoCase.title, verdict: diff.verdict });
+      } else {
+        const result = await scanSkill(paths[demoCase.id]);
+        reportToTerminal(result);
+        summary.push({
+          title: demoCase.title,
+          verdict: `${result.status} (${result.score}/100)`,
+        });
       }
-    } catch (error) {
-      console.warn(
-        `Warning: Could not scan ${fixture.name} fixture:`,
-        (error as Error).message,
-      );
     }
+  } finally {
+    cleanup();
   }
 
-  // Print summary
   console.log("\n" + "=".repeat(60));
-  console.log("\nDemo Summary:");
-  console.log(
-    "AcidTest provides four security levels based on trust score (0-100):\n",
-  );
-
-  for (const { fixture, result } of results) {
-    const statusColor =
-      result.status === "PASS"
-        ? "green"
-        : result.status === "WARN"
-          ? "yellow"
-          : result.status === "FAIL"
-            ? "red"
-            : "red";
-
-    console.log(
-      `  ${result.status.padEnd(6)} (${result.score}/100) - ${getStatusDescription(result.status)}`,
-    );
+  console.log("\nDemo Summary:\n");
+  for (const { title, verdict } of summary) {
+    console.log(`  ${verdict.padEnd(16)} ${title}`);
   }
-
   console.log(
-    "\nRun 'acidtest scan <path>' to scan your own skills and tools.",
+    "\nRun 'acidtest scan <path>' to scan your own skills and tools,",
   );
+  console.log("or 'acidtest diff <old> <new>' to check an update for rug-pulls.");
   console.log("Docs and source: https://github.com/currentlycurrently/acidtest\n");
-}
-
-/**
- * Get status description for demo summary
- */
-function getStatusDescription(status: string): string {
-  switch (status) {
-    case "PASS":
-      return "Safe to use, no significant security concerns";
-    case "WARN":
-      return "Review findings before use, minor concerns";
-    case "FAIL":
-      return "Not recommended, significant security issues";
-    case "DANGER":
-      return "Do not use, critical security vulnerabilities";
-    default:
-      return "Unknown status";
-  }
 }
 
 /**
