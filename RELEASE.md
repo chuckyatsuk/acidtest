@@ -42,7 +42,7 @@ provenance needs a CI/OIDC provider, which is why we use the workflow.
 2. Go to the **acidtest** package → **Settings** → **Publishing access**
    (a.k.a. Trusted Publishers).
 3. Add a **GitHub Actions** trusted publisher:
-   - Organization / user: `currentlycurrently`
+   - Organization / user: `chuckyatsuk`
    - Repository: `acidtest`
    - Workflow filename: `release.yml` (exactly, case-sensitive)
    - Environment: leave blank (the workflow uses none)
@@ -81,10 +81,10 @@ npm view acidtest version    # should print 1.1.0
 ## 3. GitHub repo metadata (owner-executed)
 
 Set the description and topics (from the brief). Requires `gh` authed as a
-repo admin (your `currentlycurrently` login is):
+repo admin (your `chuckyatsuk` login is):
 
 ```bash
-gh repo edit currentlycurrently/acidtest \
+gh repo edit chuckyatsuk/acidtest \
   --description "Security scanner for AI agent skills and MCP servers — static analysis, taint tracking, prompt-injection detection" \
   --add-topic security \
   --add-topic static-analysis \

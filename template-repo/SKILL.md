@@ -45,7 +45,7 @@ This skill requests the following permissions:
 
 ## Security
 
-This skill has been scanned with [AcidTest](https://github.com/currentlycurrently/acidtest) and achieved a score of **100/100** (PASS).
+This skill has been scanned with [AcidTest](https://github.com/chuckyatsuk/acidtest) and achieved a score of **100/100** (PASS).
 
 To verify security yourself:
 ```bash

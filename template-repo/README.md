@@ -105,7 +105,7 @@ The template includes two workflows:
 
 ## Security Scanning
 
-This template uses [AcidTest](https://github.com/currentlycurrently/acidtest) to scan for security issues.
+This template uses [AcidTest](https://github.com/chuckyatsuk/acidtest) to scan for security issues.
 
 ### Local Scanning
 
@@ -168,10 +168,10 @@ Add pattern IDs to `.acidtest.json` ignore list:
 
 ## Resources
 
-- [AcidTest Documentation](https://github.com/currentlycurrently/acidtest)
-- [AcidTest Methodology](https://github.com/currentlycurrently/acidtest/blob/main/METHODOLOGY.md)
-- [Security Best Practices](https://github.com/currentlycurrently/acidtest/blob/main/docs/best-practices.md)
-- [CI/CD Integration Guide](https://github.com/currentlycurrently/acidtest/blob/main/docs/ci-cd.md)
+- [AcidTest Documentation](https://github.com/chuckyatsuk/acidtest)
+- [AcidTest Methodology](https://github.com/chuckyatsuk/acidtest/blob/main/METHODOLOGY.md)
+- [Security Best Practices](https://github.com/chuckyatsuk/acidtest/blob/main/docs/best-practices.md)
+- [CI/CD Integration Guide](https://github.com/chuckyatsuk/acidtest/blob/main/docs/ci-cd.md)
 
 ## License
 
@@ -179,4 +179,4 @@ MIT
 
 ---
 
-Built with [AcidTest](https://github.com/currentlycurrently/acidtest), a security scanner for AI agent skills.
+Built with [AcidTest](https://github.com/chuckyatsuk/acidtest), a security scanner for AI agent skills.

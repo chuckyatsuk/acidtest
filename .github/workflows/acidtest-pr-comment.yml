@@ -33,7 +33,7 @@ jobs:
         continue-on-error: true
         run: |
           # Detect if scanning acidtest repo itself
-          if [ "${{ github.repository }}" = "currentlycurrently/acidtest" ]; then
+          if [ "${{ github.repository }}" = "chuckyatsuk/acidtest" ]; then
             echo "📦 Detected acidtest repository - scanning test fixture"
             npx acidtest@latest scan test-fixtures/fixture-pass --json > results.json || true
           else
@@ -186,7 +186,7 @@ jobs:
             }
 
             comment += `\n---\n`;
-            comment += `<sub>Scanned with [AcidTest v${results.version || '0.8.0'}](https://github.com/currentlycurrently/acidtest)</sub>`;
+            comment += `<sub>Scanned with [AcidTest v${results.version || '0.8.0'}](https://github.com/chuckyatsuk/acidtest)</sub>`;
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({

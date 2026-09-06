@@ -171,7 +171,7 @@ For changes beyond patterns, such as new features or bug fixes:
 ### Setup
 
 ```bash
-git clone https://github.com/currentlycurrently/acidtest
+git clone https://github.com/chuckyatsuk/acidtest
 cd acidtest
 npm install
 npm run build

@@ -6,7 +6,7 @@
 #   2. Make it executable: chmod +x .git/hooks/pre-commit
 #
 # Or use this one-liner:
-#   curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#   curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/chuckyatsuk/acidtest/main/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 #
 # This hook runs AcidTest before each commit to catch security issues early
 

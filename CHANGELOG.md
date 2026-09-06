@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-06
+
+### Added
+
+- **`lint_mcp_server` tool in MCP server mode.** `acidtest serve` now exposes
+  the author-side linter to connected agents, so an agent can lint an MCP
+  server's tool descriptions before trusting it — the headline v2 feature was
+  previously only reachable from the CLI.
+
+### Fixed
+
+- **`scan_skill` MCP tool description was inaccurate.** It advertised "four
+  security layers: permissions audit, prompt injection detection, code
+  analysis, and cross-reference validation" — three of which were removed in
+  the 2.0 teardown. Now describes the two layers the tool actually runs.
+- GitHub username updated `currentlycurrently` → `chuckyatsuk` across repo
+  URLs and the `repository` field (refreshes the link shown on the npm page).
+
 ## [2.0.0] - 2026-09-05
 
 MCP-first rework. AcidTest is now focused on the MCP server and agent-skill

@@ -72,7 +72,7 @@ If you've found a security flaw in AcidTest itself:
 
 1. **DO NOT** exploit it or publish details publicly
 2. Report via **GitHub Security Advisories**:
-   - Go to: https://github.com/currentlycurrently/acidtest/security/advisories
+   - Go to: https://github.com/chuckyatsuk/acidtest/security/advisories
    - Click "Report a vulnerability"
    - Provide details (see template below)
 
@@ -272,8 +272,8 @@ Security researchers who responsibly disclose issues will be credited in:
 
 ## Contact
 
-- **GitHub Issues** (for detection bypasses): https://github.com/currentlycurrently/acidtest/issues
-- **Security Advisories** (for tool vulnerabilities): https://github.com/currentlycurrently/acidtest/security/advisories
+- **GitHub Issues** (for detection bypasses): https://github.com/chuckyatsuk/acidtest/issues
+- **Security Advisories** (for tool vulnerabilities): https://github.com/chuckyatsuk/acidtest/security/advisories
 - **Email** (for private reports): [To be added]
 
 ---

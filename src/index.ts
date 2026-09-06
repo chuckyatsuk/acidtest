@@ -13,7 +13,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
-const VERSION = "2.0.0";
+const VERSION = "2.0.1";
 
 /**
  * Main CLI function
@@ -391,7 +391,7 @@ async function handleDemo(args: string[]) {
     "\nRun 'acidtest scan <path>' to scan your own skills and tools,",
   );
   console.log("or 'acidtest diff <old> <new>' to check an update for rug-pulls.");
-  console.log("Docs and source: https://github.com/currentlycurrently/acidtest\n");
+  console.log("Docs and source: https://github.com/chuckyatsuk/acidtest\n");
 }
 
 /**
@@ -475,7 +475,7 @@ EXAMPLES:
   # Start as MCP server (for use with Claude Desktop, etc.)
   acidtest serve
 
-Docs and source: https://github.com/currentlycurrently/acidtest
+Docs and source: https://github.com/chuckyatsuk/acidtest
 `);
 }
 
