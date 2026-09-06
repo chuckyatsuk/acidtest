@@ -3,7 +3,7 @@ name: release
 # Publishes to npm with provenance when a v* tag is pushed.
 # Auth: npm Trusted Publishing via GitHub OIDC — no stored token.
 # One-time setup on npmjs.com: package Settings → Publishing access →
-# add a GitHub trusted publisher for repo currentlycurrently/acidtest,
+# add a GitHub trusted publisher for repo chuckyatsuk/acidtest,
 # workflow "release.yml". Provenance is generated automatically; do not
 # add --provenance or registry-url (they interfere with the OIDC flow).
 

@@ -315,4 +315,4 @@ Use AcidTest as a fast, automated screening tool within a layered security strat
 **Version:** v1.0.0-dev (Phase 2 Complete)
 **Maintainers:** AcidTest Team
 
-For questions or feedback, visit: https://github.com/currentlycurrently/acidtest/issues
+For questions or feedback, visit: https://github.com/chuckyatsuk/acidtest/issues

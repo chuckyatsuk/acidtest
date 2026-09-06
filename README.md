@@ -6,8 +6,8 @@ Security scanner for MCP servers and AI agent skills. Scan third-party code befo
   <a href="https://www.npmjs.com/package/acidtest">
     <img src="https://img.shields.io/npm/v/acidtest" alt="npm version">
   </a>
-  <a href="https://github.com/currentlycurrently/acidtest/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/currentlycurrently/acidtest/test.yml?branch=main" alt="build status">
+  <a href="https://github.com/chuckyatsuk/acidtest/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/chuckyatsuk/acidtest/test.yml?branch=main" alt="build status">
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license">
@@ -190,7 +190,7 @@ Install the ready-made hook:
 ```bash
 mkdir -p ~/.claude/hooks
 curl -o ~/.claude/hooks/acidtest-preinstall.sh \
-  https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/claude-code-preinstall.sh
+  https://raw.githubusercontent.com/chuckyatsuk/acidtest/main/hooks/claude-code-preinstall.sh
 chmod +x ~/.claude/hooks/acidtest-preinstall.sh
 ```
 
@@ -284,7 +284,7 @@ See [`.github/workflows/acidtest-pr-comment.yml`](.github/workflows/acidtest-pr-
 ### Pre-commit Hook
 
 ```bash
-curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/pre-commit
+curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/chuckyatsuk/acidtest/main/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
@@ -293,10 +293,10 @@ Every commit now runs a scan first.
 ### Security Badge
 
 ```markdown
-[![Security: AcidTest](https://img.shields.io/badge/security-AcidTest-brightgreen)](https://github.com/currentlycurrently/acidtest)
+[![Security: AcidTest](https://img.shields.io/badge/security-AcidTest-brightgreen)](https://github.com/chuckyatsuk/acidtest)
 ```
 
-Displays: [![Security: AcidTest](https://img.shields.io/badge/security-AcidTest-brightgreen)](https://github.com/currentlycurrently/acidtest)
+Displays: [![Security: AcidTest](https://img.shields.io/badge/security-AcidTest-brightgreen)](https://github.com/chuckyatsuk/acidtest)
 
 ## Run as an MCP server
 
@@ -401,8 +401,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 - **Website**: https://acidtest.currently.website
 - **NPM**: https://www.npmjs.com/package/acidtest
-- **GitHub**: https://github.com/currentlycurrently/acidtest
-- **Issues**: https://github.com/currentlycurrently/acidtest/issues
+- **GitHub**: https://github.com/chuckyatsuk/acidtest
+- **Issues**: https://github.com/chuckyatsuk/acidtest/issues
 
 ## License
 

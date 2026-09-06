@@ -14,7 +14,7 @@ stdin and treats **exit code 2** as "block this action."
 ```bash
 mkdir -p ~/.claude/hooks
 curl -o ~/.claude/hooks/acidtest-preinstall.sh \
-  https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/claude-code-preinstall.sh
+  https://raw.githubusercontent.com/chuckyatsuk/acidtest/main/hooks/claude-code-preinstall.sh
 chmod +x ~/.claude/hooks/acidtest-preinstall.sh
 ```
 
@@ -56,7 +56,7 @@ chmod +x .git/hooks/pre-commit
 
 **Option 2: Download from GitHub**
 ```bash
-curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/currentlycurrently/acidtest/main/hooks/pre-commit
+curl -o .git/hooks/pre-commit https://raw.githubusercontent.com/chuckyatsuk/acidtest/main/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 

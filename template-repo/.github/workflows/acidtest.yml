@@ -79,7 +79,7 @@ jobs:
               comment += '✅ No security issues detected!\n';
             }
 
-            comment += `\n---\n<sub>Scanned with [AcidTest](https://github.com/currentlycurrently/acidtest)</sub>`;
+            comment += `\n---\n<sub>Scanned with [AcidTest](https://github.com/chuckyatsuk/acidtest)</sub>`;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
