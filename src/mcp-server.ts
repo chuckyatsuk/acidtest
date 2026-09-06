@@ -12,8 +12,9 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { scanSkill, scanAllSkills } from "./scanner.js";
+import { lint } from "./lint.js";
 
-const VERSION = "2.0.0";
+const VERSION = "2.0.1";
 
 /**
  * Create and configure the MCP server
@@ -40,7 +41,7 @@ function createServer() {
         {
           name: "scan_skill",
           description:
-            "Scan an AI agent skill or MCP server for security vulnerabilities. Returns a trust score (0-100) and detailed findings across four security layers: permissions audit, prompt injection detection, code analysis, and cross-reference validation.",
+            "Scan an AI agent skill or MCP server for security vulnerabilities. Returns a trust score (0-100) and findings from two analysis layers: an injection scan of tool descriptions, manifests, and markdown (prompt injection, tool poisoning, cross-server shadowing, credential exfil, invisible-Unicode) and a code scan (dangerous imports/sinks, obfuscation, credentials) of TypeScript/JavaScript/Python source.",
           inputSchema: {
             type: "object",
             properties: {
@@ -48,6 +49,22 @@ function createServer() {
                 type: "string",
                 description:
                   "Path to the skill directory, SKILL.md file, or MCP server manifest (mcp.json, server.json, package.json)",
+              },
+            },
+            required: ["path"],
+          },
+        },
+        {
+          name: "lint_mcp_server",
+          description:
+            "Lint an MCP server's own tool descriptions before publishing. Checks the manifest and the description strings in TypeScript/JavaScript/Python source for injected instructions, hidden emphasis tags, concealment directives, covert parameters, and cross-server shadowing. Returns located findings (file, line, rule, severity) — the same things a consumer's security scanner would flag. Designed for precision: it stays quiet on legitimate wording.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              path: {
+                type: "string",
+                description:
+                  "Path to the MCP server directory, a manifest (mcp.json, server.json), a SKILL.md, or a source file",
               },
             },
             required: ["path"],
@@ -105,6 +122,23 @@ function createServer() {
               type: "text",
               text: JSON.stringify(result, null, 2),
             },
+          ],
+        };
+      } else if (name === "lint_mcp_server") {
+        if (!args || typeof args !== "object" || !("path" in args)) {
+          return {
+            content: [
+              { type: "text", text: "Error: Missing required argument 'path'" },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await lint(args.path as string);
+
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(result, null, 2) },
           ],
         };
       } else if (name === "scan_all") {

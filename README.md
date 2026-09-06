@@ -26,7 +26,7 @@ No install required. No API keys. No configuration.
 ## Example: Detecting malicious code
 
 ```
-AcidTest v2.0.0
+AcidTest v2.0.1
 
 Scanning: system-helper
 Source:   test-fixtures/fixture-danger
@@ -315,11 +315,14 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
-Then Claude can scan skills:
+It exposes three tools: `scan_skill` (scan a skill or MCP server),
+`lint_mcp_server` (lint tool descriptions the way an author would), and
+`scan_all` (scan a directory). So an agent can check a server before trusting
+it:
 
 ```
 User: "Can you scan this skill before I install it?"
-Claude: [Uses acidtest scan_skill tool to analyze]
+Claude: [Uses acidtest scan_skill to analyze]
 ```
 
 ## Configuration
