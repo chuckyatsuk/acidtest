@@ -48,13 +48,10 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "chalk": "^6.0.0",
-    "chokidar": "^5.0.0",
     "cli-table3": "^0.6.5",
     "glob": "^13.0.6",
     "gray-matter": "^4.0.3",
     "ora": "^9.3.0",
-    "tree-sitter": "^0.21.1",
-    "tree-sitter-python": "^0.21.0",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
