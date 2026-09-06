@@ -25,7 +25,7 @@ jobs:
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -49,7 +49,7 @@ jobs:
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -110,7 +110,7 @@ jobs:
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -161,7 +161,7 @@ jobs:
 
       - name: Setup Node.js
         if: hashFiles('src/scanner.ts') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
